@@ -2,7 +2,7 @@
 
 A secure, modern web application for managing all your digital accounts, passwords, and credentials in one place. Built with Next.js and Prisma.
 
-![BrewMeCoffee Dashboard](path-to-dashboard-screenshot.png)
+![BrewMeCoffee Dashboard](./public/uploads/screenshot.png)
 
 ## 🌟 Features
 
