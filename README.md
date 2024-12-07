@@ -196,7 +196,7 @@ MIT License. See [LICENSE](LICENSE) for more information.
 ## 👨‍💻 Author
 
 **Devashish Sharma**  
-Contact: devashishsharma2014@gmail.com
+Contact: devashish0571@gmail.com
 
 ## 🙏 Acknowledgments
 
