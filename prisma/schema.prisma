@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_PATH")
+}
+
+model FacebookAccount {
+  id            Int      @id @default(autoincrement())
+  userId        String   @unique
+  password      String
+  email         String?
+  emailPassword String?
+  twoFASecret   String
+  tags          String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model BankAccount {
+  id                Int      @id @default(autoincrement())
+  holderName        String
+  accountNumber     String   @unique
+  bankName          String
+  ifsc              String
+  swiftCode         String?
+  upi               String?
+  netBankingId      String?
+  netBankingPassword String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Server {
+  id           Int      @id @default(autoincrement())
+  serverIp     String   @unique
+  rootPassword String
+  customFields String   @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  type       String   @default("text") // text or media
+  sender     String   @default("User")
+  mediaUrl   String?
+  mediaType  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isEdited   Boolean  @default(false)
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Credential {
+  id           Int      @id @default(autoincrement())
+  service      String
+  serviceType  String
+  username     String?
+  email        String?
+  password     String
+  customFields String   @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CodeSnippet {
+  id        Int      @id @default(autoincrement())
+  name      String   
+  content   String
+  language  String   @default("plaintext")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

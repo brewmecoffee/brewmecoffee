@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply min-h-screen bg-gradient-to-br from-pink-200 via-purple-200 to-indigo-200;
+}
+
+.font-cursive {
+  font-family: 'Dancing Script', cursive;
+}
