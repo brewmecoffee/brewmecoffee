@@ -124,7 +124,6 @@ brewmecoffee/
 │   ├── servers/
 │   └── snippets/
 ├── components/         # React components
-├── database/          # Database utilities
 ├── prisma/            # Database schema
 ├── public/            # Static files
 └── utils/             # Utility functions
