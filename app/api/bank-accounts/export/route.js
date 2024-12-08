@@ -35,20 +35,20 @@ export async function GET() {
       })
       .join('\n')
 
-    // Create text encoder
-    const encoder = new TextEncoder()
-    const data = encoder.encode(textContent)
-
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `bank-accounts-${timestamp}.txt`
 
-    // Return properly encoded response
-    return new NextResponse(data, {
+    // Create Buffer from text content
+    const buffer = Buffer.from(textContent, 'utf-8')
+
+    // Return response with Buffer
+    return new Response(buffer, {
       status: 200,
       headers: {
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length.toString(),
       },
     })
   } catch (error) {
