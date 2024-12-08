@@ -1,28 +1,30 @@
+import { PrismaClient } from '@prisma/client'
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
-import { decrypt } from '@/utils/crypto'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
     const accounts = await prisma.facebookAccount.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     })
 
-    // Format each account into a text block with decrypted values
+    // Format each account into a text block
     const textContent = accounts.map(account => {
       const sections = [
         `Account Details for ${account.userId}`,
         '----------------------------------------',
         `User ID: ${account.userId}`,
-        `Password: ${decrypt(account.password)}`,
+        `Password: ${account.password}`,
         account.email ? `Email: ${account.email}` : null,
-        account.emailPassword ? `Email Password: ${decrypt(account.emailPassword)}` : null,
-        `2FA Secret: ${decrypt(account.twoFASecret)}`,
-        account.tags && account.tags !== '' ? `Tags: ${account.tags}` : null,
+        account.emailPassword ? `Email Password: ${account.emailPassword}` : null,
+        `2FA Secret: ${account.twoFASecret}`,
+        account.tags ? `Tags: ${account.tags}` : null,
         `Created: ${new Date(account.createdAt).toLocaleString()}`,
         `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`,
         '\n'
-      ].filter(Boolean) // Remove null entries
+      ].filter(Boolean)
 
       return sections.join('\n')
     }).join('\n')
@@ -31,14 +33,13 @@ export async function GET() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `facebook-accounts-${timestamp}.txt`
 
-    // Set headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'text/plain')
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-
+    // Return the response with proper headers
     return new NextResponse(textContent, {
       status: 200,
-      headers
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
     })
   } catch (error) {
     console.error('Error exporting accounts:', error)

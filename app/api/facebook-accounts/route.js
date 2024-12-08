@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/utils/prisma'
-import { encrypt } from '@/utils/crypto'
 
 export async function GET() {
   try {
@@ -23,10 +22,10 @@ export async function POST(req) {
     const account = await prisma.facebookAccount.create({
       data: {
         userId: data.userId,
-        password: encrypt(data.password),
+        password: data.password,
         email: data.email,
-        emailPassword: data.emailPassword ? encrypt(data.emailPassword) : null,
-        twoFASecret: encrypt(data.twoFASecret),
+        emailPassword: data.emailPassword || null,
+        twoFASecret: data.twoFASecret,
         tags: data.tags || ""
       },
     })
@@ -47,10 +46,10 @@ export async function PUT(req) {
       where: { id: data.id },
       data: {
         userId: data.userId,
-        password: encrypt(data.password),
+        password: data.password,
         email: data.email,
-        emailPassword: data.emailPassword ? encrypt(data.emailPassword) : null,
-        twoFASecret: encrypt(data.twoFASecret),
+        emailPassword: data.emailPassword || null,
+        twoFASecret: data.twoFASecret,
         tags: data.tags || ""
       },
     })

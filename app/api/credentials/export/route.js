@@ -1,6 +1,7 @@
+import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
-import { decrypt } from '@/utils/crypto'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
@@ -8,11 +9,10 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
     })
 
-    // Format credentials into readable text content with decrypted passwords
+    // Format credentials into readable text content
     const textContent = credentials.map(cred => {
       try {
         const customFields = JSON.parse(cred.customFields || '{}')
-        const decryptedPassword = decrypt(cred.password)
         
         return [
           `Credential Details for ${cred.service} (${cred.serviceType})`,
@@ -21,7 +21,7 @@ export async function GET() {
           `Type: ${cred.serviceType}`,
           cred.username ? `Username: ${cred.username}` : null,
           cred.email ? `Email: ${cred.email}` : null,
-          `Password: ${decryptedPassword}`,
+          `Password: ${cred.password}`,
           // Add custom fields if they exist
           ...Object.entries(customFields).map(([key, value]) => `${key}: ${value}`),
           `Created: ${new Date(cred.createdAt).toLocaleString()}`,
@@ -35,7 +35,7 @@ export async function GET() {
         return [
           `Error processing credential for ${cred.service}`,
           '----------------------------------------',
-          'Failed to decrypt password',
+          'Failed to process custom fields',
           '',
           '========================================',
           ''
@@ -47,14 +47,12 @@ export async function GET() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `credentials-${timestamp}.txt`
 
-    // Set headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'text/plain')
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-
     return new NextResponse(textContent, {
       status: 200,
-      headers
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
     })
   } catch (error) {
     console.error('Error exporting credentials:', error)

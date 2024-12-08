@@ -1,6 +1,8 @@
+import { PrismaClient } from '@prisma/client'
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
-import { decrypt } from '@/utils/crypto'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
@@ -8,7 +10,7 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
     })
 
-    // Format each account into a text block with decrypted values
+    // Format each account into a text block
     const textContent = accounts.map(account => {
       const sections = [
         `Bank Account Details for ${account.holderName}`,
@@ -20,7 +22,7 @@ export async function GET() {
         account.swiftCode ? `Swift Code: ${account.swiftCode}` : null,
         account.upi ? `UPI: ${account.upi}` : null,
         account.netBankingId ? `Net Banking ID: ${account.netBankingId}` : null,
-        account.netBankingPassword ? `Net Banking Password: ${decrypt(account.netBankingPassword)}` : null,
+        account.netBankingPassword ? `Net Banking Password: ${account.netBankingPassword}` : null,
         `Created: ${new Date(account.createdAt).toLocaleString()}`,
         `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`,
         '\n'
@@ -33,14 +35,13 @@ export async function GET() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `bank-accounts-${timestamp}.txt`
 
-    // Set headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'text/plain')
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-
+    // Return the response with proper headers
     return new NextResponse(textContent, {
       status: 200,
-      headers
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
     })
   } catch (error) {
     console.error('Error exporting accounts:', error)

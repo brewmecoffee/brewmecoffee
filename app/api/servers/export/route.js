@@ -1,6 +1,7 @@
+import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
-import { decrypt } from '@/utils/crypto'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
           `Server Details for ${server.serverIp}`,
           '----------------------------------------',
           `Server IP: ${server.serverIp}`,
-          `Root Password: ${server.rootPassword ? decrypt(server.rootPassword) : ''}`,
+          `Root Password: ${server.rootPassword}`,
           ...Object.entries(customFields || {}).map(([key, value]) => `${key}: ${value}`),
           `Created: ${new Date(server.createdAt).toLocaleString()}`,
           `Last Updated: ${new Date(server.updatedAt).toLocaleString()}`,
@@ -37,14 +38,12 @@ export async function GET() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `servers-${timestamp}.txt`
 
-    // Set headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'text/plain')
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-
     return new NextResponse(textContent, {
       status: 200,
-      headers
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
     })
   } catch (error) {
     console.error('Error exporting servers:', error)

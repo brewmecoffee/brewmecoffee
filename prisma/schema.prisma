@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +8,19 @@ datasource db {
   url      = env("DATABASE_PATH")
 }
 
+// New User model for authentication
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique
+  password      String
+  twoFAEnabled  Boolean   @default(false)
+  twoFASecret   String?
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Existing models
 model FacebookAccount {
   id            Int      @id @default(autoincrement())
   userId        String   @unique

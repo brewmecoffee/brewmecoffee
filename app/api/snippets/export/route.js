@@ -1,5 +1,7 @@
+import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
@@ -27,14 +29,12 @@ export async function GET() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `code-snippets-${timestamp}.txt`
 
-    // Set headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'text/plain')
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-
     return new NextResponse(textContent, {
       status: 200,
-      headers
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
     })
   } catch (error) {
     console.error('Error exporting snippets:', error)
