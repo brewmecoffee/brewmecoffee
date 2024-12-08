@@ -13,25 +13,25 @@ export async function GET() {
 
     // Create text content for messages
     const textContent = messages
-      .filter(msg => msg.type === 'text')
-      .map(msg => {
+      .filter((msg) => msg.type === 'text')
+      .map((msg) => {
         return [
           `Date: ${new Date(msg.createdAt).toLocaleString()}`,
           `From: ${msg.sender}`,
           `Message: ${msg.content}`,
-          '----------------------------------------'
+          '----------------------------------------',
         ].join('\n')
       })
       .join('\n\n')
 
     // Create zip file
     const zip = new JSZip()
-    
+
     // Add text messages file
     zip.file('messages.txt', textContent)
 
     // Add media files if they exist
-    const mediaMessages = messages.filter(msg => msg.type === 'media')
+    const mediaMessages = messages.filter((msg) => msg.type === 'media')
     if (mediaMessages.length > 0) {
       const mediaFolder = zip.folder('media')
       for (const msg of mediaMessages) {
@@ -47,16 +47,25 @@ export async function GET() {
     }
 
     // Generate zip file
-    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    const zipBlob = await zip.generateAsync({
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+      compressionOptions: {
+        level: 9,
+      },
+    })
 
-    // Set headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'application/zip')
-    headers.set('Content-Disposition', `attachment; filename="messenger-export-${new Date().toISOString().replace(/[:.]/g, '-')}.zip"`)
+    // Generate timestamp for filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `messenger-export-${timestamp}.zip`
 
+    // Return properly encoded response
     return new NextResponse(zipBlob, {
       status: 200,
-      headers,
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
     })
   } catch (error) {
     console.error('Error exporting messages:', error)

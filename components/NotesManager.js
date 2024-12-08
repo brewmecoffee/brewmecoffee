@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaPlus, FaSearch, FaThumbtack, FaTrash, FaEdit, FaTimes, FaFileExport } from 'react-icons/fa'
+import {
+  FaPlus,
+  FaSearch,
+  FaThumbtack,
+  FaTrash,
+  FaEdit,
+  FaTimes,
+  FaFileExport,
+} from 'react-icons/fa'
 import { format } from 'date-fns'
 
 export function NotesManager() {
@@ -31,7 +39,7 @@ export function NotesManager() {
     try {
       setIsExporting(true)
       const response = await fetch('/api/notes/export')
-      
+
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -56,11 +64,11 @@ export function NotesManager() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
-    
+
     const noteData = {
       title: formData.get('title'),
       content: formData.get('content'),
-      isPinned: editingNote ? editingNote.isPinned : false
+      isPinned: editingNote ? editingNote.isPinned : false,
     }
 
     try {
@@ -68,13 +76,13 @@ export function NotesManager() {
         await fetch('/api/notes', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...noteData, id: editingNote.id })
+          body: JSON.stringify({ ...noteData, id: editingNote.id }),
         })
       } else {
         await fetch('/api/notes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(noteData)
+          body: JSON.stringify(noteData),
         })
       }
 
@@ -92,7 +100,7 @@ export function NotesManager() {
       await fetch('/api/notes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...note, isPinned: !note.isPinned })
+        body: JSON.stringify({ ...note, isPinned: !note.isPinned }),
       })
       fetchNotes()
     } catch (error) {
@@ -106,7 +114,7 @@ export function NotesManager() {
         await fetch('/api/notes', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: note.id })
+          body: JSON.stringify({ id: note.id }),
         })
         fetchNotes()
       } catch (error) {
@@ -115,9 +123,10 @@ export function NotesManager() {
     }
   }
 
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredNotes = notes.filter(
+    (note) =>
+      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -134,7 +143,7 @@ export function NotesManager() {
           >
             <FaPlus /> Add Note
           </button>
-          
+
           <button
             onClick={handleExport}
             disabled={isExporting}
@@ -159,8 +168,8 @@ export function NotesManager() {
 
       {/* Notes Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredNotes.map(note => (
-          <div 
+        {filteredNotes.map((note) => (
+          <div
             key={note.id}
             className={`group bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all ${
               note.isPinned ? 'ring-2 ring-purple-500' : ''
@@ -168,7 +177,9 @@ export function NotesManager() {
           >
             {/* Note Header */}
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-semibold text-gray-800 break-words pr-16">{note.title}</h3>
+              <h3 className="text-xl font-semibold text-gray-800 break-words pr-16">
+                {note.title}
+              </h3>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => togglePin(note)}
@@ -201,7 +212,9 @@ export function NotesManager() {
 
             {/* Note Content */}
             <div className="prose prose-sm max-w-none mb-4">
-              <p className="text-gray-600 whitespace-pre-wrap break-words">{note.content}</p>
+              <p className="text-gray-600 whitespace-pre-wrap break-words">
+                {note.content}
+              </p>
             </div>
 
             {/* Note Footer */}

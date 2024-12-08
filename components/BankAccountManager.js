@@ -8,7 +8,7 @@ import {
   FaEllipsisV,
   FaTrash,
   FaEdit,
-  FaFileExport
+  FaFileExport,
 } from 'react-icons/fa'
 
 // Placeholder decrypt function
@@ -72,7 +72,9 @@ export function BankAccountManager() {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to ${editingAccount ? 'update' : 'create'} account`)
+        throw new Error(
+          `Failed to ${editingAccount ? 'update' : 'create'} account`
+        )
       }
 
       await fetchAccounts()
@@ -304,7 +306,9 @@ export function BankAccountManager() {
 
             <div className="space-y-4 pr-12">
               <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-700">Account Holder:</span>
+                <span className="font-medium text-gray-700">
+                  Account Holder:
+                </span>
                 <div className="flex items-center gap-2">
                   <span>{account.holderName}</span>
                   <button
@@ -324,12 +328,17 @@ export function BankAccountManager() {
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-700">Account Number:</span>
+                <span className="font-medium text-gray-700">
+                  Account Number:
+                </span>
                 <div className="flex items-center gap-2">
                   <span>{account.accountNumber}</span>
                   <button
                     onClick={() =>
-                      copyToClipboard(account.accountNumber, `accnum-${account.id}`)
+                      copyToClipboard(
+                        account.accountNumber,
+                        `accnum-${account.id}`
+                      )
                     }
                     className={`p-2 rounded-full hover:bg-gray-100 ${
                       copiedField === `accnum-${account.id}`
@@ -390,7 +399,10 @@ export function BankAccountManager() {
                     <span>{account.swiftCode}</span>
                     <button
                       onClick={() =>
-                        copyToClipboard(account.swiftCode, `swift-${account.id}`)
+                        copyToClipboard(
+                          account.swiftCode,
+                          `swift-${account.id}`
+                        )
                       }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `swift-${account.id}`
@@ -429,12 +441,17 @@ export function BankAccountManager() {
 
               {account.netBankingId && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Net Banking ID:</span>
+                  <span className="font-medium text-gray-700">
+                    Net Banking ID:
+                  </span>
                   <div className="flex items-center gap-2">
                     <span>{account.netBankingId}</span>
                     <button
                       onClick={() =>
-                        copyToClipboard(account.netBankingId, `netid-${account.id}`)
+                        copyToClipboard(
+                          account.netBankingId,
+                          `netid-${account.id}`
+                        )
                       }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `netid-${account.id}`
@@ -451,12 +468,17 @@ export function BankAccountManager() {
 
               {account.netBankingPassword && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Net Banking Password:</span>
+                  <span className="font-medium text-gray-700">
+                    Net Banking Password:
+                  </span>
                   <div className="flex items-center gap-2">
                     <span>••••••••</span>
                     <button
                       onClick={() =>
-                        copyToClipboard(account.netBankingPassword, `netpass-${account.id}`)
+                        copyToClipboard(
+                          account.netBankingPassword,
+                          `netpass-${account.id}`
+                        )
                       }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `netpass-${account.id}`
@@ -477,7 +499,10 @@ export function BankAccountManager() {
 
       {showAddForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 max-w-md w-full m-4">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-xl p-6 max-w-md w-full m-4"
+          >
             <h3 className="text-2xl font-semibold mb-4">
               {editingAccount ? 'Edit Bank Account' : 'Add Bank Account'}
             </h3>
@@ -510,7 +535,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Bank Name *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Bank Name *
+                </label>
                 <input
                   required
                   name="bankName"
@@ -521,7 +548,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">IFSC Code *</label>
+                <label className="block text-sm font-medium mb-1">
+                  IFSC Code *
+                </label>
                 <input
                   required
                   name="ifsc"
@@ -532,7 +561,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Swift Code</label>
+                <label className="block text-sm font-medium mb-1">
+                  Swift Code
+                </label>
                 <input
                   name="swiftCode"
                   defaultValue={editingAccount?.swiftCode}

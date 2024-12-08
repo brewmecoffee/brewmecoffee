@@ -7,59 +7,61 @@ export default function LoginPage() {
   const [credentials, setCredentials] = useState({
     username: '',
     password: '',
-    twoFactorCode: ''
+    twoFactorCode: '',
   })
   const [recaptchaToken, setRecaptchaToken] = useState(null)
   const [error, setError] = useState('')
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false)
 
   const handleSubmit = async (e) => {
-	  e.preventDefault()
-	  setError('')
+    e.preventDefault()
+    setError('')
 
-	  if (!recaptchaToken) {
-		setError('Please complete the ReCAPTCHA')
-		return
-	  }
+    if (!recaptchaToken) {
+      setError('Please complete the ReCAPTCHA')
+      return
+    }
 
-	  try {
-		const response = await fetch('/api/auth/login', {
-		  method: 'POST',
-		  headers: { 'Content-Type': 'application/json' },
-		  body: JSON.stringify({
-			...credentials,
-			recaptchaToken
-		  })
-		})
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...credentials,
+          recaptchaToken,
+        }),
+      })
 
-		const data = await response.json()
-		console.log('Login response:', data)
+      const data = await response.json()
+      console.log('Login response:', data)
 
-		if (response.status === 401 && data.require2FA) {
-		  setRequiresTwoFactor(true)
-		  setError('')
-		  return
-		}
+      if (response.status === 401 && data.require2FA) {
+        setRequiresTwoFactor(true)
+        setError('')
+        return
+      }
 
-		if (!response.ok) {
-		  throw new Error(data.error || 'Login failed')
-		}
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed')
+      }
 
-		if (data.success) {
-		  // Force a hard redirect to ensure all state is reset
-		  window.location.replace(data.redirect || '/')
-		}
-	  } catch (error) {
-		setError(error.message)
-		console.error('Login error:', error)
-	  }
-	}
+      if (data.success) {
+        // Force a hard redirect to ensure all state is reset
+        window.location.replace(data.redirect || '/')
+      }
+    } catch (error) {
+      setError(error.message)
+      console.error('Login error:', error)
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-200 via-purple-200 to-indigo-200">
       <div className="max-w-md w-full p-8 bg-white/80 backdrop-blur-sm rounded-lg shadow-xl">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 font-cursive">Login</h2>
-        
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 font-cursive">
+          Login
+        </h2>
+
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-600 rounded border border-red-200">
             {error}
@@ -68,22 +70,30 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-gray-700 mb-2 font-medium">Username</label>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Username
+            </label>
             <input
               type="text"
               value={credentials.username}
-              onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+              onChange={(e) =>
+                setCredentials({ ...credentials, username: e.target.value })
+              }
               className="w-full p-3 bg-white/50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
               required
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2 font-medium">Password</label>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Password
+            </label>
             <input
               type="password"
               value={credentials.password}
-              onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+              onChange={(e) =>
+                setCredentials({ ...credentials, password: e.target.value })
+              }
               className="w-full p-3 bg-white/50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
               required
             />
@@ -91,11 +101,18 @@ export default function LoginPage() {
 
           {requiresTwoFactor && (
             <div>
-              <label className="block text-gray-700 mb-2 font-medium">2FA Code</label>
+              <label className="block text-gray-700 mb-2 font-medium">
+                2FA Code
+              </label>
               <input
                 type="text"
                 value={credentials.twoFactorCode}
-                onChange={(e) => setCredentials({...credentials, twoFactorCode: e.target.value})}
+                onChange={(e) =>
+                  setCredentials({
+                    ...credentials,
+                    twoFactorCode: e.target.value,
+                  })
+                }
                 className="w-full p-3 bg-white/50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                 pattern="[0-9]*"
                 inputMode="numeric"
@@ -128,4 +145,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

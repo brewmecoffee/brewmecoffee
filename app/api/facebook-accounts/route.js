@@ -26,7 +26,7 @@ export async function POST(req) {
         email: data.email,
         emailPassword: data.emailPassword || null,
         twoFASecret: data.twoFASecret,
-        tags: data.tags || ""
+        tags: data.tags || '',
       },
     })
     return NextResponse.json(account)
@@ -50,7 +50,7 @@ export async function PUT(req) {
         email: data.email,
         emailPassword: data.emailPassword || null,
         twoFASecret: data.twoFASecret,
-        tags: data.tags || ""
+        tags: data.tags || '',
       },
     })
     return NextResponse.json(account)

@@ -19,19 +19,18 @@ export default function NotFound() {
           </div>
         </div>
 
-        <h1 className="text-6xl font-bold text-purple-800">
-          404
-        </h1>
-        
+        <h1 className="text-6xl font-bold text-purple-800">404</h1>
+
         <h2 className="text-3xl font-cursive text-purple-700">
           Oops! Page Not Found
         </h2>
-        
+
         <p className="text-lg text-gray-600 max-w-md mx-auto">
-          Looks like this page took a coffee break! Do not worry, you can head back home and explore other parts of BrewMeCoffee.
+          Looks like this page took a coffee break! Do not worry, you can head
+          back home and explore other parts of BrewMeCoffee.
         </p>
 
-        <Link 
+        <Link
           href="/"
           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
         >

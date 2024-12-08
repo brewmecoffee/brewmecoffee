@@ -25,7 +25,7 @@ export async function POST(req) {
         type: data.type || 'text',
         sender: data.sender || 'User',
         mediaUrl: data.mediaUrl,
-        mediaType: data.mediaType
+        mediaType: data.mediaType,
       },
     })
     return NextResponse.json(message)

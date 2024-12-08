@@ -9,7 +9,7 @@ import {
   FaTrash,
   FaEdit,
   FaFileExport,
-  FaTimes
+  FaTimes,
 } from 'react-icons/fa'
 import { decrypt } from '@/utils/crypto'
 
@@ -55,7 +55,7 @@ export function ServerManager() {
     const serverData = {
       serverIp: formData.get('serverIp').trim(),
       rootPassword: formData.get('rootPassword').trim(),
-      customFields: customFieldsData
+      customFields: customFieldsData,
     }
 
     try {
@@ -63,7 +63,7 @@ export function ServerManager() {
         const response = await fetch('/api/servers', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...serverData, id: editingServer.id })
+          body: JSON.stringify({ ...serverData, id: editingServer.id }),
         })
         if (!response.ok) {
           throw new Error('Failed to update server')
@@ -72,7 +72,7 @@ export function ServerManager() {
         const response = await fetch('/api/servers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(serverData)
+          body: JSON.stringify(serverData),
         })
         if (!response.ok) {
           throw new Error('Failed to add server')
@@ -116,7 +116,10 @@ export function ServerManager() {
   const handleEdit = (server) => {
     setEditingServer(server)
     setCustomFields(
-      Object.entries(server.customFields || {}).map(([key, value]) => ({ key, value }))
+      Object.entries(server.customFields || {}).map(([key, value]) => ({
+        key,
+        value,
+      }))
     )
     setShowAddForm(true)
     setOpenMenuId(null)
@@ -128,7 +131,7 @@ export function ServerManager() {
         const response = await fetch('/api/servers', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: serverId })
+          body: JSON.stringify({ id: serverId }),
         })
         if (!response.ok) {
           throw new Error('Failed to delete server')
@@ -154,9 +157,11 @@ export function ServerManager() {
         '----------------------------------------',
         `Server IP: ${server.serverIp}`,
         `Root Password: ${server.rootPassword ? decrypt(server.rootPassword) : ''}`,
-        ...Object.entries(customFieldsParsed).map(([key, value]) => `${key}: ${value}`),
+        ...Object.entries(customFieldsParsed).map(
+          ([key, value]) => `${key}: ${value}`
+        ),
         `Created: ${new Date(server.createdAt).toLocaleString()}`,
-        `Last Updated: ${new Date(server.updatedAt).toLocaleString()}`
+        `Last Updated: ${new Date(server.updatedAt).toLocaleString()}`,
       ].join('\n')
 
       const blob = new Blob([content], { type: 'text/plain' })
@@ -302,9 +307,13 @@ export function ServerManager() {
                 <div className="flex items-center gap-2">
                   <span>{server.serverIp}</span>
                   <button
-                    onClick={() => copyToClipboard(server.serverIp, `ip-${server.id}`)}
+                    onClick={() =>
+                      copyToClipboard(server.serverIp, `ip-${server.id}`)
+                    }
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `ip-${server.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `ip-${server.id}`
+                        ? 'text-green-500'
+                        : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -314,13 +323,22 @@ export function ServerManager() {
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-700">Root Password:</span>
+                <span className="font-medium text-gray-700">
+                  Root Password:
+                </span>
                 <div className="flex items-center gap-2">
                   <span>••••••••</span>
                   <button
-                    onClick={() => copyToClipboard(decrypt(server.rootPassword), `pass-${server.id}`)}
+                    onClick={() =>
+                      copyToClipboard(
+                        decrypt(server.rootPassword),
+                        `pass-${server.id}`
+                      )
+                    }
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `pass-${server.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `pass-${server.id}`
+                        ? 'text-green-500'
+                        : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -336,9 +354,13 @@ export function ServerManager() {
                   <div className="flex items-center gap-2">
                     <span>{value}</span>
                     <button
-                      onClick={() => copyToClipboard(value, `${key}-${server.id}`)}
+                      onClick={() =>
+                        copyToClipboard(value, `${key}-${server.id}`)
+                      }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `${key}-${server.id}` ? 'text-green-500' : 'text-gray-500'
+                        copiedField === `${key}-${server.id}`
+                          ? 'text-green-500'
+                          : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -364,7 +386,9 @@ export function ServerManager() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Server IP *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Server IP *
+                </label>
                 <input
                   required
                   name="serverIp"
@@ -375,7 +399,9 @@ export function ServerManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Root Password *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Root Password *
+                </label>
                 <input
                   required
                   type="password"
@@ -389,7 +415,9 @@ export function ServerManager() {
               {/* Custom Fields */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-sm font-medium">Custom Fields</label>
+                  <label className="block text-sm font-medium">
+                    Custom Fields
+                  </label>
                   {customFields.length < 8 && (
                     <button
                       type="button"

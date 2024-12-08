@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 const prisma = new PrismaClient()
@@ -11,33 +10,41 @@ export async function GET() {
     })
 
     // Format each account into a text block
-    const textContent = accounts.map(account => {
-      const sections = [
-        `Account Details for ${account.userId}`,
-        '----------------------------------------',
-        `User ID: ${account.userId}`,
-        `Password: ${account.password}`,
-        account.email ? `Email: ${account.email}` : null,
-        account.emailPassword ? `Email Password: ${account.emailPassword}` : null,
-        `2FA Secret: ${account.twoFASecret}`,
-        account.tags ? `Tags: ${account.tags}` : null,
-        `Created: ${new Date(account.createdAt).toLocaleString()}`,
-        `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`,
-        '\n'
-      ].filter(Boolean)
+    const textContent = accounts
+      .map((account) => {
+        const sections = [
+          `Account Details for ${account.userId}`,
+          '----------------------------------------',
+          `User ID: ${account.userId}`,
+          `Password: ${account.password}`,
+          account.email ? `Email: ${account.email}` : null,
+          account.emailPassword
+            ? `Email Password: ${account.emailPassword}`
+            : null,
+          `2FA Secret: ${account.twoFASecret}`,
+          account.tags ? `Tags: ${account.tags}` : null,
+          `Created: ${new Date(account.createdAt).toLocaleString()}`,
+          `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`,
+          '\n',
+        ].filter(Boolean)
 
-      return sections.join('\n')
-    }).join('\n')
+        return sections.join('\n')
+      })
+      .join('\n')
+
+    // Create text encoder
+    const encoder = new TextEncoder()
+    const data = encoder.encode(textContent)
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `facebook-accounts-${timestamp}.txt`
 
-    // Return the response with proper headers
-    return new NextResponse(textContent, {
+    // Return properly encoded response
+    return new NextResponse(data, {
       status: 200,
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })

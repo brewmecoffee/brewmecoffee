@@ -7,30 +7,35 @@ A secure, modern web application for managing all your digital accounts, passwor
 ## 🌟 Features
 
 - **Secure Credential Management**
+
   - Store and manage account credentials with end-to-end encryption
   - Support for custom fields and metadata
   - Export functionality with encrypted data
   - One-click copy for quick access
 
 - **Facebook Account Management**
+
   - Manage multiple Facebook accounts
   - Store 2FA secrets and generate codes
   - Email and password management
   - Custom tagging system
 
 - **Bank Account Management**
+
   - Secure storage of bank account details
   - Support for multiple banking credentials
   - UPI and net banking information
   - IFSC and SWIFT code management
 
 - **Server Management**
+
   - Store server credentials and IPs
   - Root password management
   - Custom field support for server metadata
   - Bulk export functionality
 
 - **Messenger & Notes**
+
   - Built-in messaging system with media support
   - Note-taking with markdown support
   - Pin important notes
@@ -53,34 +58,40 @@ A secure, modern web application for managing all your digital accounts, passwor
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/brewmecoffee/brewmecoffee.git
 cd brewmecoffee
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up your environment variables:
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` file with your configuration:
+
 ```env
 DATABASE_PATH="file:./brewmecoffee.db"
 NEXT_PUBLIC_ENCRYPTION_KEY="your-32-char-encryption-key"
 ```
 
 4. Initialize the database:
+
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
 5. Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -90,17 +101,20 @@ Visit `http://localhost:3000` to access the application.
 ## 🔧 Technology Stack
 
 - **Frontend**
+
   - React 18
   - Next.js 14
   - Tailwind CSS
   - React Icons
 
 - **Backend**
+
   - Next.js API Routes
   - Prisma ORM
   - SQLite Database
 
 - **Security**
+
   - CryptoJS for encryption
   - OTPLib for 2FA
   - Secure password management
@@ -158,16 +172,19 @@ brewmecoffee/
 ## 🔄 Updates & Maintenance
 
 1. Pull the latest changes:
+
 ```bash
 git pull origin main
 ```
 
 2. Install any new dependencies:
+
 ```bash
 npm install
 ```
 
 3. Update database schema:
+
 ```bash
 npx prisma generate
 npx prisma db push
@@ -184,6 +201,7 @@ npx prisma db push
 ## 🪲 Bug Reports
 
 If you find a bug, please create an issue with:
+
 - Detailed description of the bug
 - Steps to reproduce
 - Expected behavior

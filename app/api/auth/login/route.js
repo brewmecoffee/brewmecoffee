@@ -2,50 +2,59 @@
 import prisma from '@/utils/prisma'
 import { encrypt, decrypt } from '@/utils/crypto'
 import { authenticator } from 'otplib'
-import { cookies } from 'next/headers'
+// eslint-disable-next-line no-unused-vars
 import { NextResponse } from 'next/server'
 
 export async function POST(request) {
   try {
-    const { username, password, twoFactorCode, recaptchaToken } = await request.json()
+    const { username, password, twoFactorCode } = await request.json()
 
-    console.log('Login attempt:', { 
-      username, 
-      hasPassword: !!password, 
-      hasTwoFactorCode: !!twoFactorCode 
+    console.log('Login attempt:', {
+      username,
+      hasPassword: !!password,
+      hasTwoFactorCode: !!twoFactorCode,
     })
 
     const user = await prisma.user.findUnique({
-      where: { username }
+      where: { username },
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      )
     }
 
     const storedDecrypted = decrypt(user.password)
     const passwordMatches = password === storedDecrypted
 
     if (!passwordMatches) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      )
     }
 
     if (user.twoFAEnabled) {
       if (!twoFactorCode) {
-        return NextResponse.json({ 
-          error: '2FA code required', 
-          require2FA: true 
-        }, { status: 401 })
+        return NextResponse.json(
+          {
+            error: '2FA code required',
+            require2FA: true,
+          },
+          { status: 401 }
+        )
       }
 
       const isValid = authenticator.verify({
         token: twoFactorCode,
-        secret: user.twoFASecret
+        secret: user.twoFASecret,
       })
 
       console.log('2FA verification:', {
         provided: twoFactorCode,
-        isValid
+        isValid,
       })
 
       if (!isValid) {
@@ -56,14 +65,14 @@ export async function POST(request) {
     // Update last login time
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() }
+      data: { lastLogin: new Date() },
     })
 
     // Create session with full user data
     const sessionData = {
       userId: user.id,
       username: user.username,
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     }
 
     // Set session cookies with correct configuration
@@ -72,31 +81,36 @@ export async function POST(request) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 24 * 60 * 60,
-      path: '/'
+      path: '/',
     }
 
     // Create response with cookies
-    const response = NextResponse.json({ 
+    const response = NextResponse.json({
       success: true,
-      redirect: '/' 
+      redirect: '/',
     })
 
     // Set cookies on the response object
-    response.cookies.set('session-token', encrypt(JSON.stringify(sessionData)), cookieOptions)
-    response.cookies.set('authenticated', 'true', { 
-      ...cookieOptions, 
+    response.cookies.set(
+      'session-token',
+      encrypt(JSON.stringify(sessionData)),
+      cookieOptions
+    )
+    response.cookies.set('authenticated', 'true', {
+      ...cookieOptions,
       httpOnly: false,
-      sameSite: 'strict'
+      sameSite: 'strict',
     })
 
     return response
-
   } catch (error) {
     console.error('Login error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: error.message 
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   }
 }
-

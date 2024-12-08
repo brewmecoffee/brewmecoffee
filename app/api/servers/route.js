@@ -7,13 +7,13 @@ export async function GET() {
     const servers = await prisma.server.findMany({
       orderBy: { createdAt: 'desc' },
     })
-    
+
     // Parse the customFields JSON string for each server
-    const parsedServers = servers.map(server => ({
+    const parsedServers = servers.map((server) => ({
       ...server,
-      customFields: JSON.parse(server.customFields)
+      customFields: JSON.parse(server.customFields),
     }))
-    
+
     return NextResponse.json(parsedServers)
   } catch (error) {
     console.error('Error fetching servers:', error)
@@ -31,14 +31,14 @@ export async function POST(req) {
       data: {
         serverIp: data.serverIp,
         rootPassword: encrypt(data.rootPassword), // Encrypt password before saving
-        customFields: JSON.stringify(data.customFields || {})
+        customFields: JSON.stringify(data.customFields || {}),
       },
     })
-    
+
     // Parse customFields before returning
     return NextResponse.json({
       ...server,
-      customFields: JSON.parse(server.customFields)
+      customFields: JSON.parse(server.customFields),
     })
   } catch (error) {
     console.error('Error creating server:', error)
@@ -57,14 +57,14 @@ export async function PUT(req) {
       data: {
         serverIp: data.serverIp,
         rootPassword: encrypt(data.rootPassword), // Encrypt password before saving
-        customFields: JSON.stringify(data.customFields || {})
+        customFields: JSON.stringify(data.customFields || {}),
       },
     })
-    
+
     // Parse customFields before returning
     return NextResponse.json({
       ...server,
-      customFields: JSON.parse(server.customFields)
+      customFields: JSON.parse(server.customFields),
     })
   } catch (error) {
     console.error('Error updating server:', error)

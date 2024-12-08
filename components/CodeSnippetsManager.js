@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaSearch, FaCopy, FaPlus, FaEdit, FaTrash, FaFileExport } from 'react-icons/fa'
+import {
+  FaSearch,
+  FaCopy,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaFileExport,
+} from 'react-icons/fa'
 
 const CODE_LANGUAGES = [
   'plaintext',
@@ -19,7 +26,7 @@ const CODE_LANGUAGES = [
   'powershell',
   'json',
   'yaml',
-  'markdown'
+  'markdown',
 ]
 
 export function CodeSnippetsManager() {
@@ -70,13 +77,13 @@ export function CodeSnippetsManager() {
         await fetch('/api/snippets', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...snippetData, id: editingSnippet.id })
+          body: JSON.stringify({ ...snippetData, id: editingSnippet.id }),
         })
       } else {
         await fetch('/api/snippets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(snippetData)
+          body: JSON.stringify(snippetData),
         })
       }
 
@@ -92,7 +99,7 @@ export function CodeSnippetsManager() {
     try {
       setIsExporting(true)
       const response = await fetch('/api/snippets/export')
-      
+
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -120,7 +127,7 @@ export function CodeSnippetsManager() {
         await fetch('/api/snippets', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: snippetId })
+          body: JSON.stringify({ id: snippetId }),
         })
         fetchSnippets()
       } catch (error) {
@@ -129,9 +136,10 @@ export function CodeSnippetsManager() {
     }
   }
 
-  const filteredSnippets = snippets.filter(snippet =>
-    snippet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    snippet.content.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSnippets = snippets.filter(
+    (snippet) =>
+      snippet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      snippet.content.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -148,7 +156,7 @@ export function CodeSnippetsManager() {
           >
             <FaPlus /> Add Snippet
           </button>
-          
+
           <button
             onClick={handleExport}
             disabled={isExporting}
@@ -173,7 +181,7 @@ export function CodeSnippetsManager() {
 
       {/* Snippets Grid */}
       <div className="grid gap-6">
-        {filteredSnippets.map(snippet => (
+        {filteredSnippets.map((snippet) => (
           <div
             key={snippet.id}
             className="bg-white rounded-xl shadow-lg overflow-hidden"
@@ -196,7 +204,9 @@ export function CodeSnippetsManager() {
                       ? 'bg-green-100 text-green-600'
                       : 'hover:bg-gray-100 text-gray-600'
                   }`}
-                  title={copiedId === snippet.id ? 'Copied!' : 'Copy to clipboard'}
+                  title={
+                    copiedId === snippet.id ? 'Copied!' : 'Copy to clipboard'
+                  }
                 >
                   <FaCopy />
                 </button>
@@ -237,7 +247,9 @@ export function CodeSnippetsManager() {
               </h3>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Snippet Name *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Snippet Name *
+                </label>
                 <input
                   required
                   name="name"
@@ -248,14 +260,16 @@ export function CodeSnippetsManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Language *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Language *
+                </label>
                 <select
                   required
                   name="language"
                   defaultValue={editingSnippet?.language || 'plaintext'}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
                 >
-                  {CODE_LANGUAGES.map(lang => (
+                  {CODE_LANGUAGES.map((lang) => (
                     <option key={lang} value={lang}>
                       {lang.charAt(0).toUpperCase() + lang.slice(1)}
                     </option>
@@ -264,7 +278,9 @@ export function CodeSnippetsManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Code Content *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Code Content *
+                </label>
                 <textarea
                   required
                   name="content"

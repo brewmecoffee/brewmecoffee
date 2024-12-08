@@ -10,7 +10,7 @@ module.exports = {
         cursive: ['Dancing Script', 'cursive'],
       },
       animation: {
-        'bounce': 'bounce 3s infinite',
+        bounce: 'bounce 3s infinite',
       },
       keyframes: {
         bounce: {

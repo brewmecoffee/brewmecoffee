@@ -6,34 +6,39 @@ const prisma = new PrismaClient()
 export async function GET() {
   try {
     const notes = await prisma.note.findMany({
-      orderBy: [
-        { isPinned: 'desc' },
-        { updatedAt: 'desc' }
-      ],
+      orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
     })
 
     // Format notes into readable text content
-    const textContent = notes.map(note => {
-      return [
-        `Title: ${note.title}`,
-        `${note.isPinned ? '[Pinned Note]' : ''}`,
-        '----------------------------------------',
-        note.content,
-        '',
-        `Created: ${new Date(note.createdAt).toLocaleString()}`,
-        `Last Updated: ${new Date(note.updatedAt).toLocaleString()}`,
-        '========================================\n'
-      ].filter(Boolean).join('\n')
-    }).join('\n')
+    const textContent = notes
+      .map((note) => {
+        return [
+          `Title: ${note.title}`,
+          `${note.isPinned ? '[Pinned Note]' : ''}`,
+          '----------------------------------------',
+          note.content,
+          '',
+          `Created: ${new Date(note.createdAt).toLocaleString()}`,
+          `Last Updated: ${new Date(note.updatedAt).toLocaleString()}`,
+          '========================================\n',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      })
+      .join('\n')
+
+    // Create text encoder
+    const encoder = new TextEncoder()
+    const data = encoder.encode(textContent)
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `notes-${timestamp}.txt`
 
-    return new NextResponse(textContent, {
+    return new NextResponse(data, {
       status: 200,
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })

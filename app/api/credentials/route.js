@@ -7,13 +7,13 @@ export async function GET() {
     const credentials = await prisma.credential.findMany({
       orderBy: { updatedAt: 'desc' },
     })
-    
+
     // Parse customFields for each credential
-    const parsedCredentials = credentials.map(cred => ({
+    const parsedCredentials = credentials.map((cred) => ({
       ...cred,
-      customFields: JSON.parse(cred.customFields)
+      customFields: JSON.parse(cred.customFields),
     }))
-    
+
     return NextResponse.json(parsedCredentials)
   } catch (error) {
     console.error('Error fetching credentials:', error)
@@ -34,13 +34,13 @@ export async function POST(req) {
         username: data.username,
         email: data.email,
         password: encrypt(data.password), // Encrypt password before saving
-        customFields: JSON.stringify(data.customFields || {})
+        customFields: JSON.stringify(data.customFields || {}),
       },
     })
-    
+
     return NextResponse.json({
       ...credential,
-      customFields: JSON.parse(credential.customFields)
+      customFields: JSON.parse(credential.customFields),
     })
   } catch (error) {
     console.error('Error creating credential:', error)
@@ -54,10 +54,10 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     const data = await req.json()
-    
+
     // Always encrypt password before saving
     const encryptedPassword = encrypt(data.password)
-    
+
     const credential = await prisma.credential.update({
       where: { id: data.id },
       data: {
@@ -66,13 +66,13 @@ export async function PUT(req) {
         username: data.username,
         email: data.email,
         password: encryptedPassword,
-        customFields: JSON.stringify(data.customFields || {})
+        customFields: JSON.stringify(data.customFields || {}),
       },
     })
-    
+
     return NextResponse.json({
       ...credential,
-      customFields: JSON.parse(credential.customFields)
+      customFields: JSON.parse(credential.customFields),
     })
   } catch (error) {
     console.error('Error updating credential:', error)

@@ -22,7 +22,7 @@ function decrypt(encryptedText) {
 async function debugUser(username) {
   try {
     const user = await prisma.user.findUnique({
-      where: { username }
+      where: { username },
     })
 
     if (!user) {

@@ -14,9 +14,9 @@ export default function Setup2FAPage() {
       const response = await fetch('/api/auth/setup-2fa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1 })
+        body: JSON.stringify({ userId: 1 }),
       })
-      
+
       const data = await response.json()
       if (response.ok) {
         setQrCode(data.qrCodeUrl)
@@ -35,7 +35,7 @@ export default function Setup2FAPage() {
       const response = await fetch('/api/auth/verify-2fa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, token })
+        body: JSON.stringify({ userId: 1, token }),
       })
 
       const data = await response.json()
@@ -53,8 +53,10 @@ export default function Setup2FAPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-200 to-indigo-200 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white/80 backdrop-blur-sm rounded-lg shadow-xl p-8">
-        <h2 className="text-2xl font-bold mb-8 text-gray-800 font-cursive">Setup Two-Factor Authentication</h2>
-        
+        <h2 className="text-2xl font-bold mb-8 text-gray-800 font-cursive">
+          Setup Two-Factor Authentication
+        </h2>
+
         {!qrCode && (
           <button
             onClick={setupInitial2FA}
@@ -67,15 +69,21 @@ export default function Setup2FAPage() {
         {qrCode && !success && (
           <div className="space-y-6">
             <div>
-              <p className="mb-4 text-gray-700">1. Scan this QR code with your authenticator app:</p>
+              <p className="mb-4 text-gray-700">
+                1. Scan this QR code with your authenticator app:
+              </p>
               <div className="flex justify-center bg-white p-4 rounded-lg">
                 <img src={qrCode} alt="2FA QR Code" width={200} height={200} />
               </div>
             </div>
 
             <div>
-              <p className="mb-2 text-gray-700">2. Or manually enter this code:</p>
-              <code className="block p-3 bg-gray-100 rounded-lg text-purple-600 font-mono">{secret}</code>
+              <p className="mb-2 text-gray-700">
+                2. Or manually enter this code:
+              </p>
+              <code className="block p-3 bg-gray-100 rounded-lg text-purple-600 font-mono">
+                {secret}
+              </code>
             </div>
 
             <form onSubmit={verifyAndEnable2FA} className="space-y-4">

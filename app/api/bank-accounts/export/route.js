@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 const prisma = new PrismaClient()
@@ -10,36 +9,45 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
     })
 
-    // Format each account into a text block
-    const textContent = accounts.map(account => {
-      const sections = [
-        `Bank Account Details for ${account.holderName}`,
-        '----------------------------------------',
-        `Account Holder: ${account.holderName}`,
-        `Account Number: ${account.accountNumber}`,
-        `Bank Name: ${account.bankName}`,
-        `IFSC Code: ${account.ifsc}`,
-        account.swiftCode ? `Swift Code: ${account.swiftCode}` : null,
-        account.upi ? `UPI: ${account.upi}` : null,
-        account.netBankingId ? `Net Banking ID: ${account.netBankingId}` : null,
-        account.netBankingPassword ? `Net Banking Password: ${account.netBankingPassword}` : null,
-        `Created: ${new Date(account.createdAt).toLocaleString()}`,
-        `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`,
-        '\n'
-      ].filter(Boolean)
+    const textContent = accounts
+      .map((account) => {
+        const sections = [
+          `Bank Account Details for ${account.holderName}`,
+          '----------------------------------------',
+          `Account Holder: ${account.holderName}`,
+          `Account Number: ${account.accountNumber}`,
+          `Bank Name: ${account.bankName}`,
+          `IFSC Code: ${account.ifsc}`,
+          account.swiftCode ? `Swift Code: ${account.swiftCode}` : null,
+          account.upi ? `UPI: ${account.upi}` : null,
+          account.netBankingId
+            ? `Net Banking ID: ${account.netBankingId}`
+            : null,
+          account.netBankingPassword
+            ? `Net Banking Password: ${account.netBankingPassword}`
+            : null,
+          `Created: ${new Date(account.createdAt).toLocaleString()}`,
+          `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`,
+          '\n',
+        ].filter(Boolean)
 
-      return sections.join('\n')
-    }).join('\n')
+        return sections.join('\n')
+      })
+      .join('\n')
+
+    // Create text encoder
+    const encoder = new TextEncoder()
+    const data = encoder.encode(textContent)
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `bank-accounts-${timestamp}.txt`
 
-    // Return the response with proper headers
-    return new NextResponse(textContent, {
+    // Return properly encoded response
+    return new NextResponse(data, {
       status: 200,
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })

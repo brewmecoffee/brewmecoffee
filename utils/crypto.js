@@ -1,7 +1,10 @@
 // utils/crypto.js
 import CryptoJS from 'crypto-js'
 
-const key = process.env.ENCRYPTION_KEY || process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "eT9QYgXmbJ4QFHss9fDkUm3Zd8VNyLC2"
+const key =
+  process.env.ENCRYPTION_KEY ||
+  process.env.NEXT_PUBLIC_ENCRYPTION_KEY ||
+  'eT9QYgXmbJ4QFHss9fDkUm3Zd8VNyLC2'
 
 // Keep encryption for user authentication
 export function encrypt(text) {

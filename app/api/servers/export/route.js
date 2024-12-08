@@ -10,38 +10,47 @@ export async function GET() {
     })
 
     // Format each server into a text block
-    const textContent = servers.map(server => {
-      try {
-        const customFields = typeof server.customFields === 'string'
-          ? JSON.parse(server.customFields)
-          : server.customFields || {}
+    const textContent = servers
+      .map((server) => {
+        try {
+          const customFields =
+            typeof server.customFields === 'string'
+              ? JSON.parse(server.customFields)
+              : server.customFields || {}
 
-        const sections = [
-          `Server Details for ${server.serverIp}`,
-          '----------------------------------------',
-          `Server IP: ${server.serverIp}`,
-          `Root Password: ${server.rootPassword}`,
-          ...Object.entries(customFields || {}).map(([key, value]) => `${key}: ${value}`),
-          `Created: ${new Date(server.createdAt).toLocaleString()}`,
-          `Last Updated: ${new Date(server.updatedAt).toLocaleString()}`,
-          '\n'
-        ]
+          const sections = [
+            `Server Details for ${server.serverIp}`,
+            '----------------------------------------',
+            `Server IP: ${server.serverIp}`,
+            `Root Password: ${server.rootPassword}`,
+            ...Object.entries(customFields || {}).map(
+              ([key, value]) => `${key}: ${value}`
+            ),
+            `Created: ${new Date(server.createdAt).toLocaleString()}`,
+            `Last Updated: ${new Date(server.updatedAt).toLocaleString()}`,
+            '\n',
+          ]
 
-        return sections.join('\n')
-      } catch (err) {
-        console.error(`Error processing server ${server.serverIp}:`, err)
-        return `Error processing server ${server.serverIp}\n\n`
-      }
-    }).join('\n')
+          return sections.join('\n')
+        } catch (err) {
+          console.error(`Error processing server ${server.serverIp}:`, err)
+          return `Error processing server ${server.serverIp}\n\n`
+        }
+      })
+      .join('\n')
+
+    // Create text encoder
+    const encoder = new TextEncoder()
+    const data = encoder.encode(textContent)
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `servers-${timestamp}.txt`
 
-    return new NextResponse(textContent, {
+    return new NextResponse(data, {
       status: 200,
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })

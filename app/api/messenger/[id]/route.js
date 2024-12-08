@@ -14,7 +14,7 @@ export async function PUT(req, { params }) {
         sender: data.sender || 'User',
         mediaUrl: data.mediaUrl || null,
         mediaType: data.mediaType || null,
-        isEdited: true
+        isEdited: true,
       },
     })
 
@@ -34,19 +34,16 @@ export async function DELETE(req, { params }) {
 
     // Verify message exists
     const message = await prisma.message.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id) },
     })
 
     if (!message) {
-      return NextResponse.json(
-        { error: 'Message not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
     // Delete message
     await prisma.message.delete({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })

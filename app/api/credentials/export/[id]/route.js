@@ -7,7 +7,7 @@ export async function GET(req, { params }) {
     const { id } = params
 
     const credential = await prisma.credential.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id) },
     })
 
     if (!credential) {
@@ -17,15 +17,15 @@ export async function GET(req, { params }) {
       )
     }
 
-    let decryptedPassword;
+    let decryptedPassword
     try {
-      decryptedPassword = decrypt(credential.password);
+      decryptedPassword = decrypt(credential.password)
     } catch (error) {
-      console.error('Error decrypting password:', error);
-      decryptedPassword = '*** Failed to decrypt password ***';
+      console.error('Error decrypting password:', error)
+      decryptedPassword = '*** Failed to decrypt password ***'
     }
 
-    const customFields = JSON.parse(credential.customFields || '{}');
+    const customFields = JSON.parse(credential.customFields || '{}')
 
     // Format the credential into readable text
     const textContent = [
@@ -39,11 +39,15 @@ export async function GET(req, { params }) {
       // Add custom fields if they exist
       ...Object.entries(customFields).map(([key, value]) => `${key}: ${value}`),
       `Created: ${new Date(credential.createdAt).toLocaleString()}`,
-      `Last Updated: ${new Date(credential.updatedAt).toLocaleString()}`
-    ].filter(Boolean).join('\n')
+      `Last Updated: ${new Date(credential.updatedAt).toLocaleString()}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     // Generate filename
-    const sanitizedService = credential.service.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    const sanitizedService = credential.service
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `credential-${sanitizedService}-${timestamp}.txt`
 
@@ -54,7 +58,7 @@ export async function GET(req, { params }) {
 
     return new NextResponse(textContent, {
       status: 200,
-      headers
+      headers,
     })
   } catch (error) {
     console.error('Error exporting credential:', error)

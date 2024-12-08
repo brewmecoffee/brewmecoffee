@@ -49,13 +49,17 @@ export function CredentialsManager() {
     if (editingCredential) {
       setServiceType(editingCredential.serviceType)
       setCustomService(
-        editingCredential.serviceType === 'custom' ? editingCredential.service : ''
+        editingCredential.serviceType === 'custom'
+          ? editingCredential.service
+          : ''
       )
       setCustomFields(
-        Object.entries(editingCredential.customFields || {}).map(([key, value]) => ({
-          key,
-          value,
-        }))
+        Object.entries(editingCredential.customFields || {}).map(
+          ([key, value]) => ({
+            key,
+            value,
+          })
+        )
       )
     } else {
       setServiceType('predefined')
@@ -151,7 +155,9 @@ export function CredentialsManager() {
 
     const credentialData = {
       service:
-        serviceType === 'predefined' ? e.target.predefinedService.value : customService,
+        serviceType === 'predefined'
+          ? e.target.predefinedService.value
+          : customService,
       serviceType,
       username: e.target.username.value || null,
       email: e.target.email.value || null,
@@ -392,7 +398,10 @@ export function CredentialsManager() {
                     <span>{credential.email}</span>
                     <button
                       onClick={() =>
-                        copyToClipboard(credential.email, `email-${credential.id}`)
+                        copyToClipboard(
+                          credential.email,
+                          `email-${credential.id}`
+                        )
                       }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `email-${credential.id}`
@@ -440,28 +449,30 @@ export function CredentialsManager() {
               </div>
 
               {/* Custom Fields */}
-              {Object.entries(credential.customFields || {}).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">{key}:</span>
-                  <div className="flex items-center gap-2">
-                    <span>{value}</span>
-                    <button
-                      onClick={() =>
-                        copyToClipboard(value, `${key}-${credential.id}`)
-                      }
-                      className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `${key}-${credential.id}`
-                          ? 'text-green-500'
-                          : 'text-gray-500'
-                      }`}
-                      title={`Copy ${key} to clipboard`}
-                      aria-label={`Copy ${key}`}
-                    >
-                      <FaCopy />
-                    </button>
+              {Object.entries(credential.customFields || {}).map(
+                ([key, value]) => (
+                  <div key={key} className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">{key}:</span>
+                    <div className="flex items-center gap-2">
+                      <span>{value}</span>
+                      <button
+                        onClick={() =>
+                          copyToClipboard(value, `${key}-${credential.id}`)
+                        }
+                        className={`p-2 rounded-full hover:bg-gray-100 ${
+                          copiedField === `${key}-${credential.id}`
+                            ? 'text-green-500'
+                            : 'text-gray-500'
+                        }`}
+                        title={`Copy ${key} to clipboard`}
+                        aria-label={`Copy ${key}`}
+                      >
+                        <FaCopy />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </div>
         ))}
@@ -524,7 +535,8 @@ export function CredentialsManager() {
                       id="predefinedService"
                       name="predefinedService"
                       defaultValue={
-                        editingCredential?.service || PREDEFINED_SERVICES[0].name
+                        editingCredential?.service ||
+                        PREDEFINED_SERVICES[0].name
                       }
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-500"
                       required

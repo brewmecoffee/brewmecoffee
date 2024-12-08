@@ -9,10 +9,7 @@ export async function POST(req) {
     const file = formData.get('file')
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file uploaded' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
@@ -29,20 +26,17 @@ export async function POST(req) {
     // Save message in database with the file URL as content
     const message = await prisma.message.create({
       data: {
-        content: filePath,  // Store the file path as content
+        content: filePath, // Store the file path as content
         type: 'media',
         sender: 'User',
         mediaUrl: filePath,
-        mediaType: mediaType
-      }
+        mediaType: mediaType,
+      },
     })
 
     return NextResponse.json(message)
   } catch (error) {
     console.error('Error uploading file:', error)
-    return NextResponse.json(
-      { error: 'Error uploading file' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error uploading file' }, { status: 500 })
   }
 }

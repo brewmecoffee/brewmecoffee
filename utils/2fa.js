@@ -16,14 +16,10 @@ export function generate2FACode(secret) {
 export function generate2FASecret(username) {
   try {
     const secret = authenticator.generateSecret()
-    const otpauth_url = authenticator.keyuri(
-      username,
-      'BharatiyanNews',
-      secret
-    )
+    const otpauth_url = authenticator.keyuri(username, 'BharatiyanNews', secret)
     return {
       secret,
-      otpauth_url
+      otpauth_url,
     }
   } catch (error) {
     console.error('Error generating 2FA secret:', error)
@@ -37,7 +33,7 @@ export function verify2FAToken(secret, token) {
     return authenticator.verify({
       secret,
       token,
-      window: 1 // Allow 1 step before/after for time drift
+      window: 1, // Allow 1 step before/after for time drift
     })
   } catch (error) {
     console.error('Error verifying 2FA token:', error)
