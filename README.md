@@ -54,7 +54,7 @@ A secure, modern web application for managing all your digital accounts, passwor
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/brewmecoffee.git
+git clone https://github.com/brewmecoffee/brewmecoffee.git
 cd brewmecoffee
 ```
 
