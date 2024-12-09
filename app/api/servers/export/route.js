@@ -4,6 +4,8 @@ import { decrypt } from '@/utils/crypto'
 
 const prisma = new PrismaClient()
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const servers = await prisma.server.findMany({
@@ -27,14 +29,16 @@ export async function GET() {
           let customFields = {}
           try {
             if (typeof server.customFields === 'string') {
+              // Handle encrypted custom fields
               if (server.customFields.startsWith('U2FsdGVkX1')) {
-                // Decrypt if encrypted
-                customFields = JSON.parse(decrypt(server.customFields))
+                const decrypted = decrypt(server.customFields)
+                customFields = typeof decrypted === 'string' ? JSON.parse(decrypted) : decrypted
               } else {
-                // Parse if just JSON string
+                // Handle non-encrypted JSON string
                 customFields = JSON.parse(server.customFields)
               }
             } else {
+              // Handle case where customFields is already an object
               customFields = server.customFields || {}
             }
           } catch (e) {
@@ -47,6 +51,7 @@ export async function GET() {
             '----------------------------------------',
             `Server IP: ${serverIp}`,
             `Root Password: ${rootPassword}`,
+            ...(Object.keys(customFields).length > 0 ? ['', 'Custom Fields:'] : []),
             ...Object.entries(customFields).map(
               ([key, value]) => {
                 const decryptedValue = typeof value === 'string' && value.startsWith('U2FsdGVkX1')
@@ -55,6 +60,7 @@ export async function GET() {
                 return `${key}: ${decryptedValue}`
               }
             ),
+            '',
             `Created: ${new Date(server.createdAt).toLocaleString()}`,
             `Last Updated: ${new Date(server.updatedAt).toLocaleString()}`,
             '\n',
