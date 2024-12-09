@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import { decryptData } from '@/utils/crypto'
+import { decrypt } from '@/utils/crypto'
 
 const prisma = new PrismaClient()
 
@@ -16,11 +16,11 @@ export async function GET() {
         try {
           // Handle encrypted serverIp and rootPassword
           const serverIp = typeof server.serverIp === 'string' && server.serverIp.startsWith('U2FsdGVkX1') 
-            ? decryptData(server.serverIp) 
+            ? decrypt(server.serverIp) 
             : server.serverIp
 
           const rootPassword = typeof server.rootPassword === 'string' && server.rootPassword.startsWith('U2FsdGVkX1')
-            ? decryptData(server.rootPassword)
+            ? decrypt(server.rootPassword)
             : server.rootPassword
 
           // Parse custom fields
@@ -29,7 +29,7 @@ export async function GET() {
             if (typeof server.customFields === 'string') {
               if (server.customFields.startsWith('U2FsdGVkX1')) {
                 // Decrypt if encrypted
-                customFields = JSON.parse(decryptData(server.customFields))
+                customFields = JSON.parse(decrypt(server.customFields))
               } else {
                 // Parse if just JSON string
                 customFields = JSON.parse(server.customFields)
@@ -50,7 +50,7 @@ export async function GET() {
             ...Object.entries(customFields).map(
               ([key, value]) => {
                 const decryptedValue = typeof value === 'string' && value.startsWith('U2FsdGVkX1')
-                  ? decryptData(value)
+                  ? decrypt(value)
                   : value
                 return `${key}: ${decryptedValue}`
               }
