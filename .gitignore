@@ -22,6 +22,10 @@ dist
 #Package json lock file
 .package-lock.json
 
+#Webstorm
+.idea/
+.webstorm/
+
 # Database
 database/
 *.db
