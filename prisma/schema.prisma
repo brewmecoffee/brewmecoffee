@@ -5,9 +5,10 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_PATH")
+  url      = env("DATABASE_URL")
 }
 
+// New User model for authentication
 model User {
   id            Int       @id @default(autoincrement())
   username      String    @unique
@@ -19,6 +20,7 @@ model User {
   updatedAt     DateTime  @updatedAt
 }
 
+// Existing models
 model FacebookAccount {
   id            Int      @id @default(autoincrement())
   userId        String   @unique

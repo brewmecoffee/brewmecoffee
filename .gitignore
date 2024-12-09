@@ -19,6 +19,9 @@ dist
 .env.test.local
 .env.production.local
 
+#Package json lock file
+.package-lock.json
+
 # Database
 database/
 *.db
