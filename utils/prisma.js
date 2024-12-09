@@ -1,6 +1,15 @@
 import { PrismaClient } from '@prisma/client'
+import { resolveDbPath } from './db-path'
 
-const prisma = global.prisma || new PrismaClient()
+// Initialize Prisma Client with the resolved database URL
+const prisma = global.prisma || 
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: resolveDbPath(),
+      },
+    },
+  })
 
 if (process.env.NODE_ENV === 'development') {
   global.prisma = prisma
