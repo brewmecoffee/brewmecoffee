@@ -1,4 +1,4 @@
-'use client'
+// utils/crypto.js
 import CryptoJS from 'crypto-js'
 
 const key =
@@ -101,32 +101,52 @@ export function decryptBankAccount(account) {
   }
 }
 
-// Export utilities for bank accounts
-export function prepareBankAccountForExport(accounts, format = 'text') {
-  const accountsArray = Array.isArray(accounts) ? accounts : [accounts]
-  const decryptedAccounts = accountsArray.map(decryptBankAccount)
+// Export preparation for both account types
+export function prepareForExport(data, format = 'text') {
+  if (!data) return ''
+
+  // Determine if it's a Facebook account or Bank account
+  const isFacebookAccount = 'userId' in (Array.isArray(data) ? data[0] || {} : data)
+  const accountsArray = Array.isArray(data) ? data : [data]
+  
+  const decryptedAccounts = accountsArray.map(account => 
+    isFacebookAccount ? decryptFacebookAccount(account) : decryptBankAccount(account)
+  )
   
   if (format === 'json') {
     return JSON.stringify(decryptedAccounts, null, 2)
   }
   
   return decryptedAccounts.map(account => {
-    return [
-      `Bank Account Details for ${account.holderName}`,
-      '----------------------------------------',
-      `Account Holder: ${account.holderName}`,
-      `Bank Name: ${account.bankName}`,
-      `Account Number: ${account.accountNumber}`,
-      `IFSC Code: ${account.ifsc}`,
-      account.swiftCode ? `SWIFT Code: ${account.swiftCode}` : null,
-      account.upi ? `UPI ID: ${account.upi}` : null,
-      account.netBankingId ? `Net Banking ID: ${account.netBankingId}` : null,
-      account.netBankingPassword ? `Net Banking Password: ${account.netBankingPassword}` : null,
-      account.createdAt ? `Created: ${new Date(account.createdAt).toLocaleString()}` : null,
-      account.updatedAt ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n')
+    if (isFacebookAccount) {
+      return [
+        `Account Details for ${account.userId}`,
+        '----------------------------------------',
+        `User ID: ${account.userId}`,
+        `Password: ${account.password}`,
+        account.email ? `Email: ${account.email}` : null,
+        account.emailPassword ? `Email Password: ${account.emailPassword}` : null,
+        `2FA Secret: ${account.twoFASecret}`,
+        account.tags ? `Tags: ${account.tags}` : null,
+        account.createdAt ? `Created: ${new Date(account.createdAt).toLocaleString()}` : null,
+        account.updatedAt ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}` : null,
+      ].filter(Boolean).join('\n')
+    } else {
+      return [
+        `Bank Account Details for ${account.holderName}`,
+        '----------------------------------------',
+        `Account Holder: ${account.holderName}`,
+        `Bank Name: ${account.bankName}`,
+        `Account Number: ${account.accountNumber}`,
+        `IFSC Code: ${account.ifsc}`,
+        account.swiftCode ? `SWIFT Code: ${account.swiftCode}` : null,
+        account.upi ? `UPI ID: ${account.upi}` : null,
+        account.netBankingId ? `Net Banking ID: ${account.netBankingId}` : null,
+        account.netBankingPassword ? `Net Banking Password: ${account.netBankingPassword}` : null,
+        account.createdAt ? `Created: ${new Date(account.createdAt).toLocaleString()}` : null,
+        account.updatedAt ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}` : null,
+      ].filter(Boolean).join('\n')
+    }
   }).join('\n\n')
 }
 
