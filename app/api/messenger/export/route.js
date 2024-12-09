@@ -1,70 +1,47 @@
+import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
-import JSZip from 'jszip'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
-    // Fetch all messages ordered by date
     const messages = await prisma.message.findMany({
       orderBy: { createdAt: 'asc' },
     })
 
-    // Create text content for messages
+    // Format messages into readable text content
     const textContent = messages
-      .filter((msg) => msg.type === 'text')
       .map((msg) => {
         return [
-          `Date: ${new Date(msg.createdAt).toLocaleString()}`,
           `From: ${msg.sender}`,
-          `Message: ${msg.content}`,
+          `Type: ${msg.type}`,
           '----------------------------------------',
-        ].join('\n')
+          msg.content,
+          msg.mediaUrl ? `Media URL: ${msg.mediaUrl}` : null,
+          msg.mediaType ? `Media Type: ${msg.mediaType}` : null,
+          `Sent: ${new Date(msg.createdAt).toLocaleString()}`,
+          msg.isEdited ? '(Edited)' : '',
+          '========================================\n',
+        ]
+          .filter(Boolean)
+          .join('\n')
       })
-      .join('\n\n')
+      .join('\n')
 
-    // Create zip file
-    const zip = new JSZip()
-
-    // Add text messages file
-    zip.file('messages.txt', textContent)
-
-    // Add media files if they exist
-    const mediaMessages = messages.filter((msg) => msg.type === 'media')
-    if (mediaMessages.length > 0) {
-      const mediaFolder = zip.folder('media')
-      for (const msg of mediaMessages) {
-        try {
-          const filePath = join(process.cwd(), 'public', msg.content)
-          const fileContent = await readFile(filePath)
-          const fileName = msg.content.split('/').pop()
-          mediaFolder.file(fileName, fileContent)
-        } catch (err) {
-          console.error(`Error adding file to zip: ${msg.content}`, err)
-        }
-      }
-    }
-
-    // Generate zip file
-    const zipBlob = await zip.generateAsync({
-      type: 'nodebuffer',
-      compression: 'DEFLATE',
-      compressionOptions: {
-        level: 9,
-      },
-    })
+    // Create Buffer from text content
+    const buffer = Buffer.from(textContent, 'utf-8')
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const filename = `messenger-export-${timestamp}.zip`
+    const filename = `messages-${timestamp}.txt`
 
-    // Return properly encoded response
-    return new NextResponse(zipBlob, {
+    // Return response with Buffer
+    return new Response(buffer, {
       status: 200,
       headers: {
-        'Content-Type': 'application/zip',
+        'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length.toString(),
       },
     })
   } catch (error) {

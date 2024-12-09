@@ -27,19 +27,20 @@ export async function GET() {
       })
       .join('\n')
 
-    // Create text encoder
-    const encoder = new TextEncoder()
-    const data = encoder.encode(textContent)
+    // Create Buffer from text content
+    const buffer = Buffer.from(textContent, 'utf-8')
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `notes-${timestamp}.txt`
 
-    return new NextResponse(data, {
+    // Return response with Buffer
+    return new Response(buffer, {
       status: 200,
       headers: {
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length.toString(),
       },
     })
   } catch (error) {
