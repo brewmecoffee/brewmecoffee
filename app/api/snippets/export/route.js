@@ -1,5 +1,7 @@
+import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import prisma from '@/utils/prisma'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
@@ -24,15 +26,6 @@ export async function GET() {
           .join('\n')
       })
       .join('\n')
-
-    if (!textContent) {
-      return new Response('No snippets to export', {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-        },
-      });
-    }
 
     // Create Buffer from text content
     const buffer = Buffer.from(textContent, 'utf-8')
