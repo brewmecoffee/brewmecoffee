@@ -8,7 +8,6 @@ datasource db {
   url      = env("DATABASE_PATH")
 }
 
-// New User model for authentication
 model User {
   id            Int       @id @default(autoincrement())
   username      String    @unique
@@ -20,7 +19,6 @@ model User {
   updatedAt     DateTime  @updatedAt
 }
 
-// Existing models
 model FacebookAccount {
   id            Int      @id @default(autoincrement())
   userId        String   @unique
@@ -59,7 +57,7 @@ model Server {
 model Message {
   id         Int      @id @default(autoincrement())
   content    String
-  type       String   @default("text") // text or media
+  type       String   @default("text")
   sender     String   @default("User")
   mediaUrl   String?
   mediaType  String?

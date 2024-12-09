@@ -133,32 +133,25 @@ export function ServerManager() {
 
   // Toggle menu handler
   const toggleMenu = (id) => {
-    // If clicking on the same menu button that's already open, close it
     if (openMenuId === id) {
-      setOpenMenuId(null);
-      return;
+      setOpenMenuId(null)
+      return
     }
 
-    // Close any open menu when clicking elsewhere
     const closeOpenMenu = (e) => {
-      // Check if click is outside the menu
       if (!e.target.closest('.server-menu')) {
-        setOpenMenuId(null);
-        document.removeEventListener('click', closeOpenMenu);
+        setOpenMenuId(null)
+        document.removeEventListener('click', closeOpenMenu)
       }
-    };
+    }
 
-    // Add document listener to detect clicks outside
-    document.addEventListener('click', closeOpenMenu);
-
-    // Open the clicked menu
-    setOpenMenuId(id);
+    document.addEventListener('click', closeOpenMenu)
+    setOpenMenuId(id)
   }
 
   // Handle server edit
   const handleEdit = (server) => {
     setEditingServer(server)
-    // Convert custom fields object to array format for form
     const customFieldsArray = Object.entries(server.customFields || {}).map(
       ([key, value]) => ({ key, value })
     )
@@ -225,11 +218,13 @@ export function ServerManager() {
   const handleExportServer = async (server) => {
     try {
       const content = prepareForExport(server)
+      // Convert serverIp to string and ensure it exists, use a fallback if it doesn't
+      const filename = `server-${String(server.serverIp || 'unknown').replace(/[^a-zA-Z0-9]/g, '-')}.txt`
       const blob = new Blob([content], { type: 'text/plain' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `server-${server.serverIp.replace(/[^a-zA-Z0-9]/g, '-')}.txt`
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -240,18 +235,29 @@ export function ServerManager() {
       alert('Failed to export server. Please try again.')
     }
   }
-
   // Search and filter
   const filteredServers = servers.filter((server) => {
+    // If search term is empty, show all servers
+    if (!searchTerm) return true;
+
+    // If searching by custom fields
     if (searchType === 'customFields') {
-      const customFieldsString = Object.entries(server.customFields || {})
+      if (!server.customFields) return false;
+      const customFieldsString = Object.entries(server.customFields)
         .map(([key, value]) => `${key}:${value}`)
         .join(' ')
-      return customFieldsString.toLowerCase().includes(searchTerm.toLowerCase())
+      return (customFieldsString || '').toLowerCase().includes(searchTerm.toLowerCase())
     }
 
-    const searchField = searchType === 'serverIp' ? server.serverIp : ''
-    return searchField.toLowerCase().includes(searchTerm.toLowerCase())
+    // If searching by server IP
+    if (searchType === 'serverIp') {
+      // Ensure serverIp exists and is a string
+      const serverIp = String(server.serverIp || '');
+      return serverIp.toLowerCase().includes(searchTerm.toLowerCase())
+    }
+
+    // Default case: no matches
+    return false
   })
 
   return (
