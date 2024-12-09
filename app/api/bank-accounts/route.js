@@ -1,121 +1,118 @@
-import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-import CryptoJS from 'crypto-js'
-
-const prisma = new PrismaClient()
-const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY || 'your-secret-key-at-least-32-chars-long'
-
-const encrypt = (text) => {
-  if (!text) return null
-  return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString()
-}
-
-const decrypt = (ciphertext) => {
-  if (!ciphertext) return null
-  const bytes = CryptoJS.AES.decrypt(ciphertext, ENCRYPTION_KEY)
-  return bytes.toString(CryptoJS.enc.Utf8)
-}
+import prisma from '@/utils/prisma'
+import { encryptBankAccount, decryptBankAccount, prepareBankAccountForExport } from '@/utils/crypto'
 
 export async function GET() {
   try {
     const accounts = await prisma.bankAccount.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     })
-
-    // Decrypt sensitive data
-    const decryptedAccounts = accounts.map((account) => ({
-      ...account,
-      netBankingPassword: account.netBankingPassword
-        ? decrypt(account.netBankingPassword)
-        : null,
-    }))
-
+    // Decrypt accounts before sending to client
+    const decryptedAccounts = accounts.map(decryptBankAccount)
     return NextResponse.json(decryptedAccounts)
   } catch (error) {
     console.error('Error fetching accounts:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch accounts' },
+      { error: 'Error fetching accounts' },
       { status: 500 }
     )
   }
 }
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const data = await request.json()
-
-    // Encrypt sensitive data
+    const data = await req.json()
+    // Encrypt data before saving to database
+    const encryptedData = encryptBankAccount(data)
     const account = await prisma.bankAccount.create({
       data: {
-        holderName: data.holderName,
-        accountNumber: data.accountNumber,
-        bankName: data.bankName,
-        ifsc: data.ifsc,
-        swiftCode: data.swiftCode,
-        upi: data.upi,
-        netBankingId: data.netBankingId,
-        netBankingPassword: data.netBankingPassword
-          ? encrypt(data.netBankingPassword)
-          : null,
+        holderName: encryptedData.holderName,
+        accountNumber: encryptedData.accountNumber,
+        bankName: encryptedData.bankName,
+        ifsc: encryptedData.ifsc,
+        swiftCode: encryptedData.swiftCode || null,
+        upi: encryptedData.upi || null,
+        netBankingId: encryptedData.netBankingId || null,
+        netBankingPassword: encryptedData.netBankingPassword || null,
       },
     })
-
-    return NextResponse.json(account)
+    // Decrypt before sending response
+    return NextResponse.json(decryptBankAccount(account))
   } catch (error) {
     console.error('Error creating account:', error)
     return NextResponse.json(
-      { error: 'Failed to create account' },
+      { error: 'Error creating account' },
       { status: 500 }
     )
   }
 }
 
-export async function PUT(request) {
+export async function PUT(req) {
   try {
-    const data = await request.json()
-
+    const data = await req.json()
+    // Encrypt data before updating
+    const encryptedData = encryptBankAccount(data)
     const account = await prisma.bankAccount.update({
       where: { id: data.id },
       data: {
-        holderName: data.holderName,
-        accountNumber: data.accountNumber,
-        bankName: data.bankName,
-        ifsc: data.ifsc,
-        swiftCode: data.swiftCode,
-        upi: data.upi,
-        netBankingId: data.netBankingId,
-        netBankingPassword: data.netBankingPassword
-          ? encrypt(data.netBankingPassword)
-          : null,
+        holderName: encryptedData.holderName,
+        accountNumber: encryptedData.accountNumber,
+        bankName: encryptedData.bankName,
+        ifsc: encryptedData.ifsc,
+        swiftCode: encryptedData.swiftCode || null,
+        upi: encryptedData.upi || null,
+        netBankingId: encryptedData.netBankingId || null,
+        netBankingPassword: encryptedData.netBankingPassword || null,
       },
     })
-
-    return NextResponse.json(account)
+    // Decrypt before sending response
+    return NextResponse.json(decryptBankAccount(account))
   } catch (error) {
     console.error('Error updating account:', error)
     return NextResponse.json(
-      { error: 'Failed to update account' },
+      { error: 'Error updating account' },
       { status: 500 }
     )
   }
 }
 
-export async function DELETE(request) {
+export async function DELETE(req) {
   try {
-    const { id } = await request.json()
-
+    const data = await req.json()
     await prisma.bankAccount.delete({
-      where: { id },
+      where: { id: data.id },
     })
-
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting account:', error)
     return NextResponse.json(
-      { error: 'Failed to delete account' },
+      { error: 'Error deleting account' },
+      { status: 500 }
+    )
+  }
+}
+
+// Export handler
+export async function PATCH(req) {
+  try {
+    const { format = 'text' } = await req.json()
+    const accounts = await prisma.bankAccount.findMany({
+      orderBy: { createdAt: 'desc' },
+    })
+    
+    const content = prepareBankAccountForExport(accounts, format)
+    
+    return new NextResponse(content, {
+      status: 200,
+      headers: {
+        'Content-Type': format === 'json' ? 'application/json' : 'text/plain',
+        'Content-Disposition': `attachment; filename="bank-accounts.${format === 'json' ? 'json' : 'txt'}"`,
+      },
+    })
+  } catch (error) {
+    console.error('Error exporting accounts:', error)
+    return NextResponse.json(
+      { error: 'Error exporting accounts' },
       { status: 500 }
     )
   }

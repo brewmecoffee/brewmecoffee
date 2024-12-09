@@ -8,74 +8,78 @@ import {
   FaEllipsisV,
   FaTrash,
   FaEdit,
+  FaTimes,
   FaFileExport,
+  FaEye,
+  FaEyeSlash,
 } from 'react-icons/fa'
-
-// Placeholder decrypt function
-// Replace this with your actual decryption logic
-const decrypt = (encryptedText) => {
-  // Implement your decryption logic here
-  return encryptedText // For demonstration, returning the text as is
-}
+import { copyToClipboardSecurely, prepareBankAccountForExport } from '@/utils/crypto'
 
 export function BankAccountManager() {
+  // State management
   const [accounts, setAccounts] = useState([])
   const [showAddForm, setShowAddForm] = useState(false)
-  const [searchType, setSearchType] = useState('name')
+  const [searchType, setSearchType] = useState('holderName')
   const [searchTerm, setSearchTerm] = useState('')
   const [editingAccount, setEditingAccount] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [copiedField, setCopiedField] = useState(null)
-  const [isExporting, setIsExporting] = useState(false)
+  const [showSensitiveInfo, setShowSensitiveInfo] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
+  // Fetch accounts on component mount
   useEffect(() => {
     fetchAccounts()
   }, [])
 
+  // Core data fetching function
   const fetchAccounts = async () => {
     try {
+      setLoading(true)
       const response = await fetch('/api/bank-accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      } else {
-        console.error('Failed to fetch accounts:', response.statusText)
-      }
+      if (!response.ok) throw new Error('Failed to fetch accounts')
+      const data = await response.json()
+      setAccounts(data)
+      setError(null)
     } catch (error) {
       console.error('Error fetching accounts:', error)
+      setError('Failed to load accounts. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Form submission handler
   const handleSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
     const accountData = {
       holderName: formData.get('holderName'),
       accountNumber: formData.get('accountNumber'),
-      swiftCode: formData.get('swiftCode'),
-      ifsc: formData.get('ifsc'),
       bankName: formData.get('bankName'),
+      ifsc: formData.get('ifsc'),
+      swiftCode: formData.get('swiftCode'),
       upi: formData.get('upi'),
       netBankingId: formData.get('netBankingId'),
       netBankingPassword: formData.get('netBankingPassword'),
     }
 
     try {
+      const url = '/api/bank-accounts'
       const method = editingAccount ? 'PUT' : 'POST'
       const body = editingAccount
         ? JSON.stringify({ ...accountData, id: editingAccount.id })
         : JSON.stringify(accountData)
 
-      const response = await fetch('/api/bank-accounts', {
+      const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body,
       })
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to ${editingAccount ? 'update' : 'create'} account`
-        )
+        throw new Error(`Failed to ${editingAccount ? 'update' : 'add'} account`)
       }
 
       await fetchAccounts()
@@ -84,163 +88,151 @@ export function BankAccountManager() {
       e.target.reset()
     } catch (error) {
       console.error('Error saving account:', error)
+      alert('Failed to save account. Please try again.')
     }
   }
 
-  const copyToClipboard = async (text, fieldId) => {
+  // Secure clipboard handling
+  const handleCopy = async (text, fieldId) => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text)
+      const success = await copyToClipboardSecurely(text)
+      if (success) {
+        setCopiedField(fieldId)
+        setTimeout(() => setCopiedField(null), 2000)
       } else {
-        const tempInput = document.createElement('input')
-        tempInput.style.position = 'absolute'
-        tempInput.style.left = '-9999px'
-        tempInput.value = text
-        document.body.appendChild(tempInput)
-        tempInput.select()
-        try {
-          document.execCommand('copy')
-        } finally {
-          document.body.removeChild(tempInput)
-        }
+        throw new Error('Copy failed')
       }
-
-      setCopiedField(fieldId)
-      setTimeout(() => setCopiedField(null), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
       alert('Failed to copy to clipboard')
     }
   }
 
+  // Toggle menu handler
+  const toggleMenu = (id) => {
+    // If clicking on the same menu button that's already open, close it
+    if (openMenuId === id) {
+      setOpenMenuId(null);
+      return;
+    }
+
+    // Close any open menu when clicking elsewhere
+    const closeOpenMenu = (e) => {
+      // Check if click is outside the menu
+      if (!e.target.closest('.account-menu')) {
+        setOpenMenuId(null);
+        document.removeEventListener('click', closeOpenMenu);
+      }
+    };
+
+    // Add document listener to detect clicks outside
+    document.addEventListener('click', closeOpenMenu);
+
+    // Open the clicked menu
+    setOpenMenuId(id);
+  }
+
+  // Handle account edit
   const handleEdit = (account) => {
     setEditingAccount(account)
     setShowAddForm(true)
     setOpenMenuId(null)
   }
 
+  // Handle account deletion
   const handleDelete = async (accountId) => {
-    if (confirm('Are you sure you want to delete this account?')) {
-      try {
-        const response = await fetch('/api/bank-accounts', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: accountId }),
-        })
+    if (!confirm('Are you sure you want to delete this account?')) return
 
-        if (!response.ok) {
-          throw new Error('Failed to delete account')
-        }
-
-        await fetchAccounts()
-      } catch (error) {
-        console.error('Error deleting account:', error)
-      }
-    }
-    setOpenMenuId(null)
-  }
-
-  const handleExport = (account) => {
     try {
-      const content = [
-        `Bank Account Details for ${account.holderName}`,
-        '----------------------------------------',
-        `Account Holder: ${account.holderName}`,
-        `Account Number: ${account.accountNumber}`,
-        `Bank Name: ${account.bankName}`,
-        `IFSC Code: ${account.ifsc}`,
-        account.swiftCode ? `Swift Code: ${account.swiftCode}` : null,
-        account.upi ? `UPI: ${account.upi}` : null,
-        account.netBankingId ? `Net Banking ID: ${account.netBankingId}` : null,
-        account.netBankingPassword
-          ? `Net Banking Password: ${decrypt(account.netBankingPassword)}`
-          : null,
-        account.createdAt
-          ? `Created: ${new Date(account.createdAt).toLocaleString()}`
-          : null,
-        account.updatedAt
-          ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join('\n')
+      const response = await fetch('/api/bank-accounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: accountId }),
+      })
 
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `bank-account-${account.holderName
-        .toLowerCase()
-        .replace(/\s+/g, '-')}.txt`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      if (!response.ok) throw new Error('Failed to delete account')
+
+      await fetchAccounts()
       setOpenMenuId(null)
     } catch (error) {
-      console.error('Error exporting account:', error)
-      alert('Failed to export account details')
+      console.error('Error deleting account:', error)
+      alert('Failed to delete account. Please try again.')
     }
   }
 
+  // Toggle sensitive info visibility
+  const toggleSensitiveInfo = (accountId, field) => {
+    setShowSensitiveInfo(prev => ({
+      ...prev,
+      [`${accountId}-${field}`]: !prev[`${accountId}-${field}`]
+    }))
+  }
+
+  // Export functions
   const handleExportAll = async () => {
     try {
-      setIsExporting(true)
-      const response = await fetch('/api/bank-accounts/export')
+      const response = await fetch('/api/bank-accounts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format: 'text' }),
+      })
 
-      if (!response.ok) {
-        throw new Error('Failed to export accounts')
-      }
+      if (!response.ok) throw new Error('Export failed')
 
-      // Get the filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition')
-      const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/)
-      const filename = filenameMatch ? filenameMatch[1] : 'bank-accounts.txt'
-
-      // Get the text content directly
-      const text = await response.text()
-
-      // Create blob from text
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-
-      // Create download link
+      const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = filename
+      a.download = `bank-accounts-${new Date().toISOString().split('T')[0]}.txt`
       document.body.appendChild(a)
       a.click()
-
-      // Cleanup
-      window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error exporting accounts:', error)
       alert('Failed to export accounts. Please try again.')
-    } finally {
-      setIsExporting(false)
     }
   }
 
-  const toggleMenu = (id) => {
-    setOpenMenuId(openMenuId === id ? null : id)
+  const handleExportAccount = async (account) => {
+    try {
+      const content = prepareBankAccountForExport(account)
+      const blob = new Blob([content], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `bank-account-${account.holderName.toLowerCase().replace(/\s+/g, '-')}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      setOpenMenuId(null)
+    } catch (error) {
+      console.error('Error exporting account:', error)
+      alert('Failed to export account. Please try again.')
+    }
   }
 
+  // Search and filter
   const filteredAccounts = accounts.filter((account) => {
     const searchField =
-      searchType === 'name'
+      searchType === 'holderName'
         ? account.holderName
-        : searchType === 'accountNumber'
-          ? account.accountNumber
-          : searchType === 'bankName'
-            ? account.bankName
-            : account.ifsc
-    return searchField?.toLowerCase().includes(searchTerm.toLowerCase())
+        : searchType === 'bankName'
+          ? account.bankName
+          : searchType === 'accountNumber'
+            ? account.accountNumber
+            : searchType === 'ifsc'
+              ? account.ifsc
+              : ''
+    return searchField.toLowerCase().includes(searchTerm.toLowerCase())
   })
+
+  // Continuing from the previous part...
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      {/* Header Section with Search and Actions */}
+      {/* Header Controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex gap-2">
           <button
@@ -250,16 +242,13 @@ export function BankAccountManager() {
             }}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-md"
           >
-            <FaPlus /> Add Bank Account
+            <FaPlus /> Add Account
           </button>
           <button
             onClick={handleExportAll}
-            disabled={isExporting}
-            className={`bg-green-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors shadow-md ${
-              isExporting ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className="bg-green-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors shadow-md"
           >
-            <FaFileExport /> {isExporting ? 'Exporting...' : 'Export All'}
+            <FaFileExport /> Export All
           </button>
         </div>
 
@@ -269,9 +258,9 @@ export function BankAccountManager() {
             onChange={(e) => setSearchType(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-300 shadow-sm bg-white"
           >
-            <option value="name">Account Holder</option>
-            <option value="accountNumber">Account Number</option>
+            <option value="holderName">Account Holder</option>
             <option value="bankName">Bank Name</option>
+            <option value="accountNumber">Account Number</option>
             <option value="ifsc">IFSC Code</option>
           </select>
 
@@ -288,6 +277,20 @@ export function BankAccountManager() {
         </div>
       </div>
 
+      {/* Loading and Error States */}
+      {loading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading accounts...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+
       {/* Accounts Grid */}
       <div className="grid gap-6">
         {filteredAccounts.map((account) => (
@@ -295,38 +298,37 @@ export function BankAccountManager() {
             key={account.id}
             className="bg-white rounded-xl p-6 shadow-lg relative hover:shadow-xl transition-shadow"
           >
-            {/* Account Actions Menu */}
-            <div className="absolute top-2 right-2">
+            {/* Account Menu Button */}
+            <div className="absolute top-2 right-2 account-menu">
               <button
-                onClick={() => toggleMenu(account.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleMenu(account.id)
+                }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Options"
               >
                 <FaEllipsisV className="text-gray-500" />
               </button>
 
               {openMenuId === account.id && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 border z-10">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 border z-10 account-menu">
                   <button
                     onClick={() => handleEdit(account)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <FaEdit className="text-blue-500" />
-                    Edit Account
+                    <FaEdit className="text-blue-500" /> Edit Account
                   </button>
                   <button
-                    onClick={() => handleExport(account)}
+                    onClick={() => handleExportAccount(account)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <FaFileExport className="text-green-500" />
-                    Export Details
+                    <FaFileExport className="text-green-500" /> Export Account
                   </button>
                   <button
                     onClick={() => handleDelete(account.id)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <FaTrash className="text-red-500" />
-                    Delete Account
+                    <FaTrash className="text-red-500" /> Delete Account
                   </button>
                 </div>
               )}
@@ -334,32 +336,15 @@ export function BankAccountManager() {
 
             {/* Account Details */}
             <div className="space-y-4 pr-12">
-              {/* Account Holder Name */}
+              {/* Account Holder */}
               <div className="flex justify-between items-center">
                 <span className="font-medium text-gray-700">Account Holder:</span>
                 <div className="flex items-center gap-2">
                   <span>{account.holderName}</span>
                   <button
-                    onClick={() => copyToClipboard(account.holderName, `name-${account.id}`)}
+                    onClick={() => handleCopy(account.holderName, `holder-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `name-${account.id}` ? 'text-green-500' : 'text-gray-500'
-                    }`}
-                    title="Copy to clipboard"
-                  >
-                    <FaCopy />
-                  </button>
-                </div>
-              </div>
-
-              {/* Account Number */}
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-700">Account Number:</span>
-                <div className="flex items-center gap-2">
-                  <span>{account.accountNumber}</span>
-                  <button
-                    onClick={() => copyToClipboard(account.accountNumber, `accnum-${account.id}`)}
-                    className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `accnum-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `holder-${account.id}` ? 'text-green-500' : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -374,9 +359,37 @@ export function BankAccountManager() {
                 <div className="flex items-center gap-2">
                   <span>{account.bankName}</span>
                   <button
-                    onClick={() => copyToClipboard(account.bankName, `bank-${account.id}`)}
+                    onClick={() => handleCopy(account.bankName, `bank-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
                       copiedField === `bank-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                    }`}
+                    title="Copy to clipboard"
+                  >
+                    <FaCopy />
+                  </button>
+                </div>
+              </div>
+
+              {/* Account Number */}
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-gray-700">Account Number:</span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    {showSensitiveInfo[`${account.id}-accountNumber`]
+                      ? account.accountNumber
+                      : '••••' + account.accountNumber.slice(-4)}
+                  </span>
+                  <button
+                    onClick={() => toggleSensitiveInfo(account.id, 'accountNumber')}
+                    className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                    title={showSensitiveInfo[`${account.id}-accountNumber`] ? 'Hide number' : 'Show number'}
+                  >
+                    {showSensitiveInfo[`${account.id}-accountNumber`] ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                  <button
+                    onClick={() => handleCopy(account.accountNumber, `accnum-${account.id}`)}
+                    className={`p-2 rounded-full hover:bg-gray-100 ${
+                      copiedField === `accnum-${account.id}` ? 'text-green-500' : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -391,7 +404,7 @@ export function BankAccountManager() {
                 <div className="flex items-center gap-2">
                   <span>{account.ifsc}</span>
                   <button
-                    onClick={() => copyToClipboard(account.ifsc, `ifsc-${account.id}`)}
+                    onClick={() => handleCopy(account.ifsc, `ifsc-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
                       copiedField === `ifsc-${account.id}` ? 'text-green-500' : 'text-gray-500'
                     }`}
@@ -402,14 +415,14 @@ export function BankAccountManager() {
                 </div>
               </div>
 
-              {/* Optional Fields - Swift Code */}
+              {/* SWIFT Code */}
               {account.swiftCode && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Swift Code:</span>
+                  <span className="font-medium text-gray-700">SWIFT Code:</span>
                   <div className="flex items-center gap-2">
                     <span>{account.swiftCode}</span>
                     <button
-                      onClick={() => copyToClipboard(account.swiftCode, `swift-${account.id}`)}
+                      onClick={() => handleCopy(account.swiftCode, `swift-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `swift-${account.id}` ? 'text-green-500' : 'text-gray-500'
                       }`}
@@ -421,14 +434,14 @@ export function BankAccountManager() {
                 </div>
               )}
 
-              {/* Optional Fields - UPI */}
+              {/* UPI ID */}
               {account.upi && (
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-700">UPI ID:</span>
                   <div className="flex items-center gap-2">
                     <span>{account.upi}</span>
                     <button
-                      onClick={() => copyToClipboard(account.upi, `upi-${account.id}`)}
+                      onClick={() => handleCopy(account.upi, `upi-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `upi-${account.id}` ? 'text-green-500' : 'text-gray-500'
                       }`}
@@ -440,14 +453,14 @@ export function BankAccountManager() {
                 </div>
               )}
 
-              {/* Optional Fields - Net Banking */}
+              {/* Net Banking ID */}
               {account.netBankingId && (
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-700">Net Banking ID:</span>
                   <div className="flex items-center gap-2">
                     <span>{account.netBankingId}</span>
                     <button
-                      onClick={() => copyToClipboard(account.netBankingId, `netid-${account.id}`)}
+                      onClick={() => handleCopy(account.netBankingId, `netid-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `netid-${account.id}` ? 'text-green-500' : 'text-gray-500'
                       }`}
@@ -459,13 +472,25 @@ export function BankAccountManager() {
                 </div>
               )}
 
+              {/* Net Banking Password */}
               {account.netBankingPassword && (
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-700">Net Banking Password:</span>
                   <div className="flex items-center gap-2">
-                    <span>••••••••</span>
+                    <span>
+                      {showSensitiveInfo[`${account.id}-netBankingPassword`]
+                        ? account.netBankingPassword
+                        : '••••••••'}
+                    </span>
                     <button
-                      onClick={() => copyToClipboard(account.netBankingPassword, `netpass-${account.id}`)}
+                      onClick={() => toggleSensitiveInfo(account.id, 'netBankingPassword')}
+                      className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                      title={showSensitiveInfo[`${account.id}-netBankingPassword`] ? 'Hide password' : 'Show password'}
+                    >
+                      {showSensitiveInfo[`${account.id}-netBankingPassword`] ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    <button
+                      onClick={() => handleCopy(account.netBankingPassword, `netpass-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
                         copiedField === `netpass-${account.id}` ? 'text-green-500' : 'text-gray-500'
                       }`}
@@ -481,13 +506,28 @@ export function BankAccountManager() {
         ))}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 max-w-md w-full m-4">
-            <h3 className="text-2xl font-semibold mb-4">
-              {editingAccount ? 'Edit Bank Account' : 'Add Bank Account'}
-            </h3>
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-xl p-6 max-w-md w-full m-4"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-semibold">
+                {editingAccount ? 'Edit Bank Account' : 'Add Bank Account'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddForm(false)
+                  setEditingAccount(null)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
 
             <div className="space-y-4">
               <div>
@@ -496,19 +536,8 @@ export function BankAccountManager() {
                   required
                   name="holderName"
                   defaultValue={editingAccount?.holderName}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Enter account holder name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Account Number *</label>
-                <input
-                  required
-                  name="accountNumber"
-                  defaultValue={editingAccount?.accountNumber}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Enter account number"
                 />
               </div>
 
@@ -518,8 +547,19 @@ export function BankAccountManager() {
                   required
                   name="bankName"
                   defaultValue={editingAccount?.bankName}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Enter bank name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Account Number *</label>
+                <input
+                  required
+                  name="accountNumber"
+                  defaultValue={editingAccount?.accountNumber}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                  placeholder="Enter account number"
                 />
               </div>
 
@@ -529,18 +569,18 @@ export function BankAccountManager() {
                   required
                   name="ifsc"
                   defaultValue={editingAccount?.ifsc}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Enter IFSC code"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Swift Code</label>
+                <label className="block text-sm font-medium mb-1">SWIFT Code</label>
                 <input
                   name="swiftCode"
                   defaultValue={editingAccount?.swiftCode}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  placeholder="Enter Swift code (optional)"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                  placeholder="Enter SWIFT code (optional)"
                 />
               </div>
 
@@ -549,8 +589,7 @@ export function BankAccountManager() {
                 <input
                   name="upi"
                   defaultValue={editingAccount?.upi}
-                  pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Enter UPI ID (optional)"
                 />
               </div>
@@ -560,7 +599,7 @@ export function BankAccountManager() {
                 <input
                   name="netBankingId"
                   defaultValue={editingAccount?.netBankingId}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Enter net banking ID (optional)"
                 />
               </div>
@@ -571,7 +610,7 @@ export function BankAccountManager() {
                   type="password"
                   name="netBankingPassword"
                   defaultValue={editingAccount?.netBankingPassword}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Enter net banking password (optional)"
                 />
               </div>

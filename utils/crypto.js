@@ -1,4 +1,4 @@
-// utils/crypto.js
+'use client'
 import CryptoJS from 'crypto-js'
 
 const key =
@@ -6,11 +6,10 @@ const key =
   process.env.NEXT_PUBLIC_ENCRYPTION_KEY ||
   'eT9QYgXmbJ4QFHss9fDkUm3Zd8VNyLC2'
 
-// Enhanced encryption function that handles objects and arrays
+// Base encryption function
 export function encrypt(data) {
   if (!data) return data
   try {
-    // If data is an object or array, stringify it first
     const textToEncrypt = typeof data === 'object' ? JSON.stringify(data) : String(data)
     const paddedText = `v1:${textToEncrypt}`
     return CryptoJS.AES.encrypt(paddedText, key).toString()
@@ -20,7 +19,7 @@ export function encrypt(data) {
   }
 }
 
-// Enhanced decryption function that handles objects and arrays
+// Base decryption function
 export function decrypt(encryptedText) {
   if (!encryptedText) return encryptedText
   try {
@@ -31,16 +30,13 @@ export function decrypt(encryptedText) {
       return encryptedText
     }
 
-    // Remove version prefix
-    const plainText = decryptedText.startsWith('v1:')
-      ? decryptedText.substring(3)
+    const plainText = decryptedText.startsWith('v1:') 
+      ? decryptedText.substring(3) 
       : decryptedText
 
-    // Try parsing as JSON in case it's an encrypted object/array
     try {
       return JSON.parse(plainText)
     } catch {
-      // If not valid JSON, return as is
       return plainText
     }
   } catch (error) {
@@ -49,7 +45,7 @@ export function decrypt(encryptedText) {
   }
 }
 
-// Facebook Account specific encryption/decryption
+// Facebook Account encryption/decryption
 export function encryptFacebookAccount(account) {
   return {
     ...account,
@@ -75,7 +71,66 @@ export function decryptFacebookAccount(account) {
   }
 }
 
-// Utility functions for secure clipboard operations
+// Bank Account encryption/decryption
+export function encryptBankAccount(account) {
+  return {
+    ...account,
+    holderName: encrypt(account.holderName),
+    accountNumber: encrypt(account.accountNumber),
+    bankName: encrypt(account.bankName),
+    ifsc: encrypt(account.ifsc),
+    swiftCode: account.swiftCode ? encrypt(account.swiftCode) : null,
+    upi: account.upi ? encrypt(account.upi) : null,
+    netBankingId: account.netBankingId ? encrypt(account.netBankingId) : null,
+    netBankingPassword: account.netBankingPassword ? encrypt(account.netBankingPassword) : null
+  }
+}
+
+export function decryptBankAccount(account) {
+  if (!account) return account
+  return {
+    ...account,
+    holderName: decrypt(account.holderName),
+    accountNumber: decrypt(account.accountNumber),
+    bankName: decrypt(account.bankName),
+    ifsc: decrypt(account.ifsc),
+    swiftCode: account.swiftCode ? decrypt(account.swiftCode) : null,
+    upi: account.upi ? decrypt(account.upi) : null,
+    netBankingId: account.netBankingId ? decrypt(account.netBankingId) : null,
+    netBankingPassword: account.netBankingPassword ? decrypt(account.netBankingPassword) : null
+  }
+}
+
+// Export utilities for bank accounts
+export function prepareBankAccountForExport(accounts, format = 'text') {
+  const accountsArray = Array.isArray(accounts) ? accounts : [accounts]
+  const decryptedAccounts = accountsArray.map(decryptBankAccount)
+  
+  if (format === 'json') {
+    return JSON.stringify(decryptedAccounts, null, 2)
+  }
+  
+  return decryptedAccounts.map(account => {
+    return [
+      `Bank Account Details for ${account.holderName}`,
+      '----------------------------------------',
+      `Account Holder: ${account.holderName}`,
+      `Bank Name: ${account.bankName}`,
+      `Account Number: ${account.accountNumber}`,
+      `IFSC Code: ${account.ifsc}`,
+      account.swiftCode ? `SWIFT Code: ${account.swiftCode}` : null,
+      account.upi ? `UPI ID: ${account.upi}` : null,
+      account.netBankingId ? `Net Banking ID: ${account.netBankingId}` : null,
+      account.netBankingPassword ? `Net Banking Password: ${account.netBankingPassword}` : null,
+      account.createdAt ? `Created: ${new Date(account.createdAt).toLocaleString()}` : null,
+      account.updatedAt ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n')
+  }).join('\n\n')
+}
+
+// Clipboard utilities
 export async function copyToClipboardSecurely(text) {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -90,7 +145,7 @@ export async function copyToClipboardSecurely(text) {
       document.body.appendChild(textArea)
       textArea.focus()
       textArea.select()
-
+      
       try {
         document.execCommand('copy')
         textArea.remove()
@@ -107,33 +162,10 @@ export async function copyToClipboardSecurely(text) {
   }
 }
 
-// Export utilities
-export function prepareForExport(accounts, format = 'text') {
-  // Ensure accounts is an array
-  const accountsArray = Array.isArray(accounts) ? accounts : [accounts]
-
-  // Decrypt all accounts
-  const decryptedAccounts = accountsArray.map(decryptFacebookAccount)
-
-  if (format === 'json') {
-    return JSON.stringify(decryptedAccounts, null, 2)
+// Secure string comparison for authentication
+export function compareSecurely(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') {
+    return false
   }
-
-  // Default text format
-  return decryptedAccounts.map(account => {
-    return [
-      `Account Details for ${account.userId}`,
-      '----------------------------------------',
-      `User ID: ${account.userId}`,
-      `Password: ${account.password}`,
-      account.email ? `Email: ${account.email}` : null,
-      account.emailPassword ? `Email Password: ${account.emailPassword}` : null,
-      `2FA Secret: ${account.twoFASecret}`,
-      account.tags ? `Tags: ${account.tags}` : null,
-      account.createdAt ? `Created: ${new Date(account.createdAt).toLocaleString()}` : null,
-      account.updatedAt ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n')
-  }).join('\n\n')
+  return CryptoJS.SHA256(a).toString() === CryptoJS.SHA256(b).toString()
 }
