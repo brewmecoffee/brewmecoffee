@@ -1,5 +1,3 @@
-// Path: C:\Users\admin\Documents\nextjs-app\brewmecoffee\components\FacebookAccountManager.js
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -12,10 +10,14 @@ import {
   FaEdit,
   FaTimes,
   FaFileExport,
+  FaEye,
+  FaEyeSlash,
 } from 'react-icons/fa'
-import { generate2FACode } from '../utils/2fa'
+import { generate2FACode } from '@/utils/2fa'
+import { copyToClipboardSecurely, prepareForExport } from '@/utils/crypto'
 
 export function FacebookAccountManager() {
+  // State management
   const [accounts, setAccounts] = useState([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [searchType, setSearchType] = useState('userid')
@@ -23,25 +25,33 @@ export function FacebookAccountManager() {
   const [editingAccount, setEditingAccount] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [copiedField, setCopiedField] = useState(null)
+  const [showPasswords, setShowPasswords] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
+  // Fetch accounts on component mount
   useEffect(() => {
     fetchAccounts()
   }, [])
 
+  // Core data fetching function
   const fetchAccounts = async () => {
     try {
+      setLoading(true)
       const response = await fetch('/api/facebook-accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      } else {
-        console.error('Failed to fetch accounts:', response.statusText)
-      }
+      if (!response.ok) throw new Error('Failed to fetch accounts')
+      const data = await response.json()
+      setAccounts(data)
+      setError(null)
     } catch (error) {
       console.error('Error fetching accounts:', error)
+      setError('Failed to load accounts. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Form submission handler
   const handleSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
@@ -55,24 +65,20 @@ export function FacebookAccountManager() {
     }
 
     try {
-      if (editingAccount) {
-        const response = await fetch('/api/facebook-accounts', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...accountData, id: editingAccount.id }),
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to update account: ${response.statusText}`)
-        }
-      } else {
-        const response = await fetch('/api/facebook-accounts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(accountData),
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to add account: ${response.statusText}`)
-        }
+      const url = '/api/facebook-accounts'
+      const method = editingAccount ? 'PUT' : 'POST'
+      const body = editingAccount
+        ? JSON.stringify({ ...accountData, id: editingAccount.id })
+        : JSON.stringify(accountData)
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${editingAccount ? 'update' : 'add'} account`)
       }
 
       await fetchAccounts()
@@ -85,114 +91,92 @@ export function FacebookAccountManager() {
     }
   }
 
-  const copyToClipboard = async (text, fieldId) => {
+  // Secure clipboard handling
+  const handleCopy = async (text, fieldId) => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text)
+      const success = await copyToClipboardSecurely(text)
+      if (success) {
+        setCopiedField(fieldId)
+        setTimeout(() => setCopiedField(null), 2000)
       } else {
-        const tempInput = document.createElement('input')
-        tempInput.style.position = 'absolute'
-        tempInput.style.left = '-9999px'
-        tempInput.value = text
-        document.body.appendChild(tempInput)
-        tempInput.select()
-        try {
-          document.execCommand('copy')
-        } finally {
-          document.body.removeChild(tempInput)
-        }
+        throw new Error('Copy failed')
       }
-
-      setCopiedField(fieldId)
-      setTimeout(() => setCopiedField(null), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
       alert('Failed to copy to clipboard')
     }
   }
 
+  // Handle account edit
   const handleEdit = (account) => {
     setEditingAccount(account)
     setShowAddForm(true)
     setOpenMenuId(null)
   }
 
+  // Handle account deletion
   const handleDelete = async (accountId) => {
-    if (confirm('Are you sure you want to delete this account?')) {
-      try {
-        const response = await fetch('/api/facebook-accounts', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: accountId }),
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to delete account: ${response.statusText}`)
-        }
-        await fetchAccounts()
-      } catch (error) {
-        console.error('Error deleting account:', error)
-        alert('Failed to delete account. Please try again.')
-      }
+    if (!confirm('Are you sure you want to delete this account?')) return
+
+    try {
+      const response = await fetch('/api/facebook-accounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: accountId }),
+      })
+
+      if (!response.ok) throw new Error('Failed to delete account')
+
+      await fetchAccounts()
+      setOpenMenuId(null)
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('Failed to delete account. Please try again.')
     }
-    setOpenMenuId(null)
   }
 
-  const toggleMenu = (id) => {
-    setOpenMenuId(openMenuId === id ? null : id)
+  // Toggle password visibility
+  const togglePasswordVisibility = (accountId, field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [`${accountId}-${field}`]: !prev[`${accountId}-${field}`]
+    }))
   }
 
+  // Export functions
   const handleExportAll = async () => {
     try {
-      const response = await fetch('/api/facebook-accounts/export')
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'facebook-accounts.txt'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        window.URL.revokeObjectURL(url)
-      } else {
-        throw new Error(`Failed to export accounts: ${response.statusText}`)
-      }
+      const response = await fetch('/api/facebook-accounts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format: 'text' }),
+      })
+
+      if (!response.ok) throw new Error('Export failed')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `facebook-accounts-${new Date().toISOString().split('T')[0]}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error exporting accounts:', error)
       alert('Failed to export accounts. Please try again.')
     }
   }
 
-  const handleExportAccount = (account) => {
+  const handleExportAccount = async (account) => {
     try {
-      const content = [
-        `Account Details for ${account.userId}`,
-        '----------------------------------------',
-        `User ID: ${account.userId}`,
-        `Password: ${account.password}`,
-        account.email ? `Email: ${account.email}` : null,
-        account.emailPassword
-          ? `Email Password: ${account.emailPassword}`
-          : null,
-        `2FA Secret: ${account.twoFASecret}`,
-        account.tags ? `Tags: ${account.tags}` : null,
-        account.createdAt
-          ? `Created: ${new Date(account.createdAt).toLocaleString()}`
-          : null,
-        account.updatedAt
-          ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join('\n')
-
+      const content = prepareForExport(account)
       const blob = new Blob([content], { type: 'text/plain' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `facebook-account-${account.userId
-        .toLowerCase()
-        .replace(/\s+/g, '-')}.txt`
+      a.download = `facebook-account-${account.userId.toLowerCase().replace(/\s+/g, '-')}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -204,6 +188,7 @@ export function FacebookAccountManager() {
     }
   }
 
+  // Search and filter
   const filteredAccounts = accounts.filter((account) => {
     const searchField =
       searchType === 'email'
@@ -218,6 +203,7 @@ export function FacebookAccountManager() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {/* Header Controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex gap-2">
           <button
@@ -227,7 +213,7 @@ export function FacebookAccountManager() {
             }}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-md"
           >
-            <FaPlus /> Add an Account
+            <FaPlus /> Add Account
           </button>
           <button
             onClick={handleExportAll}
@@ -262,12 +248,28 @@ export function FacebookAccountManager() {
         </div>
       </div>
 
+      {/* Loading and Error States */}
+      {loading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading accounts...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+
+      {/* Accounts Grid */}
       <div className="grid gap-6">
         {filteredAccounts.map((account) => (
           <div
             key={account.id}
             className="bg-white rounded-xl p-6 shadow-lg relative hover:shadow-xl transition-shadow"
           >
+            {/* Account Menu Button */}
             <div className="absolute top-2 right-2">
               <button
                 onClick={() => toggleMenu(account.id)}
@@ -282,40 +284,35 @@ export function FacebookAccountManager() {
                     onClick={() => handleEdit(account)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <FaEdit className="text-blue-500" />
-                    Edit Account
+                    <FaEdit className="text-blue-500" /> Edit Account
                   </button>
                   <button
                     onClick={() => handleExportAccount(account)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <FaFileExport className="text-green-500" />
-                    Export Account
+                    <FaFileExport className="text-green-500" /> Export Account
                   </button>
                   <button
                     onClick={() => handleDelete(account.id)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <FaTrash className="text-red-500" />
-                    Delete Account
+                    <FaTrash className="text-red-500" /> Delete Account
                   </button>
                 </div>
               )}
             </div>
 
+            {/* Account Details */}
             <div className="space-y-4 pr-12">
+              {/* User ID */}
               <div className="flex justify-between items-center">
                 <span className="font-medium text-gray-700">User ID:</span>
                 <div className="flex items-center gap-2">
                   <span>{account.userId}</span>
                   <button
-                    onClick={() =>
-                      copyToClipboard(account.userId, `userid-${account.id}`)
-                    }
+                    onClick={() => handleCopy(account.userId, `userid-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `userid-${account.id}`
-                        ? 'text-green-500'
-                        : 'text-gray-500'
+                      copiedField === `userid-${account.id}` ? 'text-green-500' : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -324,21 +321,24 @@ export function FacebookAccountManager() {
                 </div>
               </div>
 
+              {/* Password */}
               <div className="flex justify-between items-center">
                 <span className="font-medium text-gray-700">Password:</span>
                 <div className="flex items-center gap-2">
-                  <span>••••••••</span>
+                  <span>
+                    {showPasswords[`${account.id}-password`] ? account.password : '••••••••'}
+                  </span>
                   <button
-                    onClick={() =>
-                      copyToClipboard(
-                        account.password,
-                        `password-${account.id}`
-                      )
-                    }
+                    onClick={() => togglePasswordVisibility(account.id, 'password')}
+                    className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                    title={showPasswords[`${account.id}-password`] ? 'Hide password' : 'Show password'}
+                  >
+                    {showPasswords[`${account.id}-password`] ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                  <button
+                    onClick={() => handleCopy(account.password, `password-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `password-${account.id}`
-                        ? 'text-green-500'
-                        : 'text-gray-500'
+                      copiedField === `password-${account.id}` ? 'text-green-500' : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -347,19 +347,16 @@ export function FacebookAccountManager() {
                 </div>
               </div>
 
+              {/* Email */}
               {account.email && (
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-700">Email:</span>
                   <div className="flex items-center gap-2">
                     <span>{account.email}</span>
                     <button
-                      onClick={() =>
-                        copyToClipboard(account.email, `email-${account.id}`)
-                      }
+                      onClick={() => handleCopy(account.email, `email-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `email-${account.id}`
-                          ? 'text-green-500'
-                          : 'text-gray-500'
+                        copiedField === `email-${account.id}` ? 'text-green-500' : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -369,24 +366,25 @@ export function FacebookAccountManager() {
                 </div>
               )}
 
+              {/* Email Password */}
               {account.emailPassword && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">
-                    Email Password:
-                  </span>
+                  <span className="font-medium text-gray-700">Email Password:</span>
                   <div className="flex items-center gap-2">
-                    <span>••••••••</span>
+                    <span>
+                      {showPasswords[`${account.id}-emailPassword`] ? account.emailPassword : '••••••••'}
+                    </span>
                     <button
-                      onClick={() =>
-                        copyToClipboard(
-                          account.emailPassword,
-                          `emailpass-${account.id}`
-                        )
-                      }
+                      onClick={() => togglePasswordVisibility(account.id, 'emailPassword')}
+                      className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                      title={showPasswords[`${account.id}-emailPassword`] ? 'Hide password' : 'Show password'}
+                    >
+                      {showPasswords[`${account.id}-emailPassword`] ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                    <button
+                      onClick={() => handleCopy(account.emailPassword, `emailpass-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `emailpass-${account.id}`
-                          ? 'text-green-500'
-                          : 'text-gray-500'
+                        copiedField === `emailpass-${account.id}` ? 'text-green-500' : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -396,6 +394,7 @@ export function FacebookAccountManager() {
                 </div>
               )}
 
+              {/* 2FA Code */}
               <div className="flex justify-between items-center">
                 <span className="font-medium text-gray-700">2FA Code:</span>
                 <div className="flex items-center gap-2">
@@ -403,16 +402,9 @@ export function FacebookAccountManager() {
                     {generate2FACode(account.twoFASecret)}
                   </span>
                   <button
-                    onClick={() =>
-                      copyToClipboard(
-                        generate2FACode(account.twoFASecret),
-                        `2fa-${account.id}`
-                      )
-                    }
+                    onClick={() => handleCopy(generate2FACode(account.twoFASecret), `2fa-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `2fa-${account.id}`
-                        ? 'text-green-500'
-                        : 'text-gray-500'
+                      copiedField === `2fa-${account.id}` ? 'text-green-500' : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -421,6 +413,7 @@ export function FacebookAccountManager() {
                 </div>
               </div>
 
+              {/* Tags */}
               {account.tags && account.tags.trim() !== '' && (
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-700">Tags:</span>
@@ -433,19 +426,6 @@ export function FacebookAccountManager() {
                         {tag.trim()}
                       </span>
                     ))}
-                    <button
-                      onClick={() =>
-                        copyToClipboard(account.tags, `tags-${account.id}`)
-                      }
-                      className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `tags-${account.id}`
-                          ? 'text-green-500'
-                          : 'text-gray-500'
-                      }`}
-                      title="Copy to clipboard"
-                    >
-                      <FaCopy />
-                    </button>
                   </div>
                 </div>
               )}
@@ -454,6 +434,7 @@ export function FacebookAccountManager() {
         ))}
       </div>
 
+      {/* Add/Edit Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <form
@@ -462,9 +443,7 @@ export function FacebookAccountManager() {
           >
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-semibold">
-                {editingAccount
-                  ? 'Edit Facebook Account'
-                  : 'Add Facebook Account'}
+                {editingAccount ? 'Edit Facebook Account' : 'Add Facebook Account'}
               </h3>
               <button
                 type="button"
@@ -480,9 +459,7 @@ export function FacebookAccountManager() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  User ID *
-                </label>
+                <label className="block text-sm font-medium mb-1">User ID *</label>
                 <input
                   required
                   name="userId"
@@ -493,9 +470,7 @@ export function FacebookAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Password *
-                </label>
+                <label className="block text-sm font-medium mb-1">Password *</label>
                 <input
                   required
                   type="password"
@@ -518,9 +493,7 @@ export function FacebookAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Email Password
-                </label>
+                <label className="block text-sm font-medium mb-1">Email Password</label>
                 <input
                   type="password"
                   name="emailPassword"
@@ -531,9 +504,7 @@ export function FacebookAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  2FA Secret *
-                </label>
+                <label className="block text-sm font-medium mb-1">2FA Secret *</label>
                 <input
                   required
                   name="twoFA"

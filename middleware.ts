@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { BYPASS_AUTH, DEV_MODE } from './utils/devBypass'
 
 export function middleware(request: NextRequest) {
     // Skip auth check for public paths
@@ -9,6 +10,11 @@ export function middleware(request: NextRequest) {
         request.nextUrl.pathname === '/login' ||
         request.nextUrl.pathname === '/favicon.ico'
     ) {
+        return NextResponse.next()
+    }
+
+    // Development mode bypass
+    if (DEV_MODE && BYPASS_AUTH) {
         return NextResponse.next()
     }
 
@@ -23,8 +29,4 @@ export function middleware(request: NextRequest) {
     }
 
     return NextResponse.next()
-}
-
-export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)']
 }

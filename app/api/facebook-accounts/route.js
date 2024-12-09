@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/utils/prisma'
+import { encryptFacebookAccount, decryptFacebookAccount, prepareForExport } from '@/utils/crypto'
 
 export async function GET() {
   try {
     const accounts = await prisma.facebookAccount.findMany({
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json(accounts)
+    // Decrypt accounts before sending to client
+    const decryptedAccounts = accounts.map(decryptFacebookAccount)
+    return NextResponse.json(decryptedAccounts)
   } catch (error) {
     console.error('Error fetching accounts:', error)
     return NextResponse.json(
@@ -19,17 +22,20 @@ export async function GET() {
 export async function POST(req) {
   try {
     const data = await req.json()
+    // Encrypt data before saving to database
+    const encryptedData = encryptFacebookAccount(data)
     const account = await prisma.facebookAccount.create({
       data: {
-        userId: data.userId,
-        password: data.password,
-        email: data.email,
-        emailPassword: data.emailPassword || null,
-        twoFASecret: data.twoFASecret,
-        tags: data.tags || '',
+        userId: encryptedData.userId,
+        password: encryptedData.password,
+        email: encryptedData.email,
+        emailPassword: encryptedData.emailPassword || null,
+        twoFASecret: encryptedData.twoFASecret,
+        tags: encryptedData.tags || '',
       },
     })
-    return NextResponse.json(account)
+    // Decrypt before sending response
+    return NextResponse.json(decryptFacebookAccount(account))
   } catch (error) {
     console.error('Error creating account:', error)
     return NextResponse.json(
@@ -42,18 +48,21 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     const data = await req.json()
+    // Encrypt data before updating
+    const encryptedData = encryptFacebookAccount(data)
     const account = await prisma.facebookAccount.update({
       where: { id: data.id },
       data: {
-        userId: data.userId,
-        password: data.password,
-        email: data.email,
-        emailPassword: data.emailPassword || null,
-        twoFASecret: data.twoFASecret,
-        tags: data.tags || '',
+        userId: encryptedData.userId,
+        password: encryptedData.password,
+        email: encryptedData.email,
+        emailPassword: encryptedData.emailPassword || null,
+        twoFASecret: encryptedData.twoFASecret,
+        tags: encryptedData.tags || '',
       },
     })
-    return NextResponse.json(account)
+    // Decrypt before sending response
+    return NextResponse.json(decryptFacebookAccount(account))
   } catch (error) {
     console.error('Error updating account:', error)
     return NextResponse.json(
@@ -74,6 +83,32 @@ export async function DELETE(req) {
     console.error('Error deleting account:', error)
     return NextResponse.json(
       { error: 'Error deleting account' },
+      { status: 500 }
+    )
+  }
+}
+
+// Export handler
+export async function PATCH(req) {
+  try {
+    const { format = 'text' } = await req.json()
+    const accounts = await prisma.facebookAccount.findMany({
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const content = prepareForExport(accounts, format)
+
+    return new NextResponse(content, {
+      status: 200,
+      headers: {
+        'Content-Type': format === 'json' ? 'application/json' : 'text/plain',
+        'Content-Disposition': `attachment; filename="facebook-accounts.${format === 'json' ? 'json' : 'txt'}"`,
+      },
+    })
+  } catch (error) {
+    console.error('Error exporting accounts:', error)
+    return NextResponse.json(
+      { error: 'Error exporting accounts' },
       { status: 500 }
     )
   }
