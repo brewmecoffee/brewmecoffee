@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/utils/prisma'
-import { encryptBankAccount, decryptBankAccount, prepareBankAccountForExport } from '@/utils/crypto'
+import { encryptBankAccount, decryptBankAccount, prepareForExport } from '@/utils/crypto'
 
 export async function GET() {
   try {
@@ -100,7 +100,7 @@ export async function PATCH(req) {
       orderBy: { createdAt: 'desc' },
     })
     
-    const content = prepareBankAccountForExport(accounts, format)
+    const content = prepareForExport(accounts, format)
     
     return new NextResponse(content, {
       status: 200,

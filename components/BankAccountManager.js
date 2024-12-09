@@ -13,7 +13,7 @@ import {
   FaEye,
   FaEyeSlash,
 } from 'react-icons/fa'
-import { copyToClipboardSecurely, prepareBankAccountForExport } from '@/utils/crypto'
+import { copyToClipboardSecurely, prepareForExport } from '@/utils/crypto'
 
 export function BankAccountManager() {
   // State management
@@ -196,7 +196,7 @@ export function BankAccountManager() {
 
   const handleExportAccount = async (account) => {
     try {
-      const content = prepareBankAccountForExport(account)
+      const content = prepareForExport(account)
       const blob = new Blob([content], { type: 'text/plain' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
