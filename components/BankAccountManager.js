@@ -15,6 +15,19 @@ import {
 } from 'react-icons/fa'
 import { copyToClipboardSecurely, prepareForExport } from '@/utils/crypto'
 
+// Add this at the top of your BankAccountManager.js file, right after the imports
+const ensureString = (value) => {
+  if (value === null || value === undefined) return ''
+  return String(value)
+}
+
+// Add this helper function
+const getMaskedAccountNumber = (accountNumber) => {
+  const numStr = ensureString(accountNumber)
+  if (numStr.length < 4) return numStr
+  return '••••' + numStr.slice(-4)
+}
+
 export function BankAccountManager() {
   // State management
   const [accounts, setAccounts] = useState([])
@@ -31,6 +44,7 @@ export function BankAccountManager() {
   // Fetch accounts on component mount
   useEffect(() => {
     fetchAccounts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Core data fetching function
@@ -56,7 +70,7 @@ export function BankAccountManager() {
     const formData = new FormData(e.target)
     const accountData = {
       holderName: formData.get('holderName'),
-      accountNumber: formData.get('accountNumber'),
+      accountNumber: ensureString(formData.get('accountNumber')), // Ensure string
       bankName: formData.get('bankName'),
       ifsc: formData.get('ifsc'),
       swiftCode: formData.get('swiftCode'),
@@ -112,24 +126,24 @@ export function BankAccountManager() {
   const toggleMenu = (id) => {
     // If clicking on the same menu button that's already open, close it
     if (openMenuId === id) {
-      setOpenMenuId(null);
-      return;
+      setOpenMenuId(null)
+      return
     }
 
     // Close any open menu when clicking elsewhere
     const closeOpenMenu = (e) => {
       // Check if click is outside the menu
       if (!e.target.closest('.account-menu')) {
-        setOpenMenuId(null);
-        document.removeEventListener('click', closeOpenMenu);
+        setOpenMenuId(null)
+        document.removeEventListener('click', closeOpenMenu)
       }
-    };
+    }
 
     // Add document listener to detect clicks outside
-    document.addEventListener('click', closeOpenMenu);
+    document.addEventListener('click', closeOpenMenu)
 
     // Open the clicked menu
-    setOpenMenuId(id);
+    setOpenMenuId(id)
   }
 
   // Handle account edit
@@ -162,9 +176,9 @@ export function BankAccountManager() {
 
   // Toggle sensitive info visibility
   const toggleSensitiveInfo = (accountId, field) => {
-    setShowSensitiveInfo(prev => ({
+    setShowSensitiveInfo((prev) => ({
       ...prev,
-      [`${accountId}-${field}`]: !prev[`${accountId}-${field}`]
+      [`${accountId}-${field}`]: !prev[`${accountId}-${field}`],
     }))
   }
 
@@ -183,7 +197,9 @@ export function BankAccountManager() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `bank-accounts-${new Date().toISOString().split('T')[0]}.txt`
+      a.download = `bank-accounts-${new Date()
+        .toISOString()
+        .split('T')[0]}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -201,7 +217,9 @@ export function BankAccountManager() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `bank-account-${account.holderName.toLowerCase().replace(/\s+/g, '-')}.txt`
+      a.download = `bank-account-${account.holderName
+        .toLowerCase()
+        .replace(/\s+/g, '-')}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -221,7 +239,7 @@ export function BankAccountManager() {
         : searchType === 'bankName'
           ? account.bankName
           : searchType === 'accountNumber'
-            ? account.accountNumber
+            ? ensureString(account.accountNumber)
             : searchType === 'ifsc'
               ? account.ifsc
               : ''
@@ -340,9 +358,13 @@ export function BankAccountManager() {
                 <div className="flex items-center gap-2">
                   <span>{account.holderName}</span>
                   <button
-                    onClick={() => handleCopy(account.holderName, `holder-${account.id}`)}
+                    onClick={() =>
+                      handleCopy(account.holderName, `holder-${account.id}`)
+                    }
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `holder-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `holder-${account.id}`
+                        ? 'text-green-500'
+                        : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -359,7 +381,9 @@ export function BankAccountManager() {
                   <button
                     onClick={() => handleCopy(account.bankName, `bank-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `bank-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `bank-${account.id}`
+                        ? 'text-green-500'
+                        : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -374,20 +398,37 @@ export function BankAccountManager() {
                 <div className="flex items-center gap-2">
                   <span>
                     {showSensitiveInfo[`${account.id}-accountNumber`]
-                      ? account.accountNumber
-                      : '••••' + account.accountNumber.slice(-4)}
+                      ? ensureString(account.accountNumber)
+                      : getMaskedAccountNumber(account.accountNumber)}
                   </span>
                   <button
-                    onClick={() => toggleSensitiveInfo(account.id, 'accountNumber')}
+                    onClick={() =>
+                      toggleSensitiveInfo(account.id, 'accountNumber')
+                    }
                     className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
-                    title={showSensitiveInfo[`${account.id}-accountNumber`] ? 'Hide number' : 'Show number'}
+                    title={
+                      showSensitiveInfo[`${account.id}-accountNumber`]
+                        ? 'Hide number'
+                        : 'Show number'
+                    }
                   >
-                    {showSensitiveInfo[`${account.id}-accountNumber`] ? <FaEyeSlash /> : <FaEye />}
+                    {showSensitiveInfo[`${account.id}-accountNumber`] ? (
+                      <FaEyeSlash />
+                    ) : (
+                      <FaEye />
+                    )}
                   </button>
                   <button
-                    onClick={() => handleCopy(account.accountNumber, `accnum-${account.id}`)}
+                    onClick={() =>
+                      handleCopy(
+                        ensureString(account.accountNumber),
+                        `accnum-${account.id}`
+                      )
+                    }
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `accnum-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `accnum-${account.id}`
+                        ? 'text-green-500'
+                        : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -404,7 +445,9 @@ export function BankAccountManager() {
                   <button
                     onClick={() => handleCopy(account.ifsc, `ifsc-${account.id}`)}
                     className={`p-2 rounded-full hover:bg-gray-100 ${
-                      copiedField === `ifsc-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                      copiedField === `ifsc-${account.id}`
+                        ? 'text-green-500'
+                        : 'text-gray-500'
                     }`}
                     title="Copy to clipboard"
                   >
@@ -420,9 +463,13 @@ export function BankAccountManager() {
                   <div className="flex items-center gap-2">
                     <span>{account.swiftCode}</span>
                     <button
-                      onClick={() => handleCopy(account.swiftCode, `swift-${account.id}`)}
+                      onClick={() =>
+                        handleCopy(account.swiftCode, `swift-${account.id}`)
+                      }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `swift-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                        copiedField === `swift-${account.id}`
+                          ? 'text-green-500'
+                          : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -441,7 +488,9 @@ export function BankAccountManager() {
                     <button
                       onClick={() => handleCopy(account.upi, `upi-${account.id}`)}
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `upi-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                        copiedField === `upi-${account.id}`
+                          ? 'text-green-500'
+                          : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -458,9 +507,13 @@ export function BankAccountManager() {
                   <div className="flex items-center gap-2">
                     <span>{account.netBankingId}</span>
                     <button
-                      onClick={() => handleCopy(account.netBankingId, `netid-${account.id}`)}
+                      onClick={() =>
+                        handleCopy(account.netBankingId, `netid-${account.id}`)
+                      }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `netid-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                        copiedField === `netid-${account.id}`
+                          ? 'text-green-500'
+                          : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -473,7 +526,9 @@ export function BankAccountManager() {
               {/* Net Banking Password */}
               {account.netBankingPassword && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Net Banking Password:</span>
+                  <span className="font-medium text-gray-700">
+                    Net Banking Password:
+                  </span>
                   <div className="flex items-center gap-2">
                     <span>
                       {showSensitiveInfo[`${account.id}-netBankingPassword`]
@@ -481,16 +536,33 @@ export function BankAccountManager() {
                         : '••••••••'}
                     </span>
                     <button
-                      onClick={() => toggleSensitiveInfo(account.id, 'netBankingPassword')}
+                      onClick={() =>
+                        toggleSensitiveInfo(account.id, 'netBankingPassword')
+                      }
                       className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
-                      title={showSensitiveInfo[`${account.id}-netBankingPassword`] ? 'Hide password' : 'Show password'}
+                      title={
+                        showSensitiveInfo[`${account.id}-netBankingPassword`]
+                          ? 'Hide password'
+                          : 'Show password'
+                      }
                     >
-                      {showSensitiveInfo[`${account.id}-netBankingPassword`] ? <FaEyeSlash /> : <FaEye />}
+                      {showSensitiveInfo[`${account.id}-netBankingPassword`] ? (
+                        <FaEyeSlash />
+                      ) : (
+                        <FaEye />
+                      )}
                     </button>
                     <button
-                      onClick={() => handleCopy(account.netBankingPassword, `netpass-${account.id}`)}
+                      onClick={() =>
+                        handleCopy(
+                          account.netBankingPassword,
+                          `netpass-${account.id}`
+                        )
+                      }
                       className={`p-2 rounded-full hover:bg-gray-100 ${
-                        copiedField === `netpass-${account.id}` ? 'text-green-500' : 'text-gray-500'
+                        copiedField === `netpass-${account.id}`
+                          ? 'text-green-500'
+                          : 'text-gray-500'
                       }`}
                       title="Copy to clipboard"
                     >
@@ -529,7 +601,9 @@ export function BankAccountManager() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Account Holder Name *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Account Holder Name *
+                </label>
                 <input
                   required
                   name="holderName"
@@ -540,7 +614,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Bank Name *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Bank Name *
+                </label>
                 <input
                   required
                   name="bankName"
@@ -551,7 +627,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Account Number *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Account Number *
+                </label>
                 <input
                   required
                   name="accountNumber"
@@ -562,7 +640,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">IFSC Code *</label>
+                <label className="block text-sm font-medium mb-1">
+                  IFSC Code *
+                </label>
                 <input
                   required
                   name="ifsc"
@@ -573,7 +653,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">SWIFT Code</label>
+                <label className="block text-sm font-medium mb-1">
+                  SWIFT Code
+                </label>
                 <input
                   name="swiftCode"
                   defaultValue={editingAccount?.swiftCode}
@@ -593,7 +675,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Net Banking ID</label>
+                <label className="block text-sm font-medium mb-1">
+                  Net Banking ID
+                </label>
                 <input
                   name="netBankingId"
                   defaultValue={editingAccount?.netBankingId}
@@ -603,7 +687,9 @@ export function BankAccountManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Net Banking Password</label>
+                <label className="block text-sm font-medium mb-1">
+                  Net Banking Password
+                </label>
                 <input
                   type="password"
                   name="netBankingPassword"
