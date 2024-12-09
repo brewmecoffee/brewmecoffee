@@ -51,6 +51,29 @@ export function FacebookAccountManager() {
     }
   }
 
+  const toggleMenu = (id) => {
+    // If clicking on the same menu button that's already open, close it
+    if (openMenuId === id) {
+      setOpenMenuId(null);
+      return;
+    }
+
+    // Close any open menu when clicking elsewhere
+    const closeOpenMenu = (e) => {
+      // Check if click is outside the menu
+      if (!e.target.closest('.account-menu')) {
+        setOpenMenuId(null);
+        document.removeEventListener('click', closeOpenMenu);
+      }
+    };
+
+    // Add document listener to detect clicks outside
+    document.addEventListener('click', closeOpenMenu);
+
+    // Open the clicked menu
+    setOpenMenuId(id);
+  };
+
   // Form submission handler
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -270,16 +293,19 @@ export function FacebookAccountManager() {
             className="bg-white rounded-xl p-6 shadow-lg relative hover:shadow-xl transition-shadow"
           >
             {/* Account Menu Button */}
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-2 right-2 account-menu">
               <button
-                onClick={() => toggleMenu(account.id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event from bubbling up
+                  toggleMenu(account.id);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <FaEllipsisV className="text-gray-500" />
               </button>
 
               {openMenuId === account.id && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 border z-10">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 border z-10 account-menu">
                   <button
                     onClick={() => handleEdit(account)}
                     className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
