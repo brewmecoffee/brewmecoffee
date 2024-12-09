@@ -62,8 +62,8 @@ export async function GET() {
 
           return sections.join('\n')
         } catch (err) {
-          console.error(\`Error processing server \${server.id}:\`, err)
-          return \`Error processing server ID \${server.id}\n\n\`
+          console.error(`Error processing server ${server.id}:`, err)
+          return `Error processing server ID ${server.id}\n\n`
         }
       })
       .join('\n')
@@ -74,13 +74,13 @@ export async function GET() {
 
     // Generate timestamp for filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const filename = \`servers-\${timestamp}.txt\`
+    const filename = `servers-${timestamp}.txt`
 
     return new NextResponse(data, {
       status: 200,
       headers: {
         'Content-Type': 'application/octet-stream',
-        'Content-Disposition': \`attachment; filename="\${filename}"\`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })
   } catch (error) {
