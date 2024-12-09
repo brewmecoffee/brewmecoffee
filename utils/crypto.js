@@ -101,24 +101,74 @@ export function decryptBankAccount(account) {
   }
 }
 
-// Export preparation for both account types
+// Server encryption/decryption
+export function encryptServer(server) {
+  const customFields = server.customFields 
+    ? typeof server.customFields === 'string' 
+      ? JSON.parse(server.customFields)
+      : server.customFields
+    : {}
+
+  return {
+    ...server,
+    serverIp: encrypt(server.serverIp),
+    rootPassword: encrypt(server.rootPassword),
+    customFields: encrypt(customFields)
+  }
+}
+
+export function decryptServer(server) {
+  if (!server) return server
+
+  const decryptedCustomFields = decrypt(server.customFields)
+  const parsedCustomFields = typeof decryptedCustomFields === 'string'
+    ? JSON.parse(decryptedCustomFields)
+    : decryptedCustomFields
+
+  return {
+    ...server,
+    serverIp: decrypt(server.serverIp),
+    rootPassword: decrypt(server.rootPassword),
+    customFields: parsedCustomFields
+  }
+}
+
+// Export preparation for all account types
 export function prepareForExport(data, format = 'text') {
   if (!data) return ''
 
-  // Determine if it's a Facebook account or Bank account
-  const isFacebookAccount = 'userId' in (Array.isArray(data) ? data[0] || {} : data)
+  // Determine the type of data based on properties
+  const isServer = 'serverIp' in (Array.isArray(data) ? data[0] || {} : data)
+  const isFacebookAccount = !isServer && 'userId' in (Array.isArray(data) ? data[0] || {} : data)
+  
   const accountsArray = Array.isArray(data) ? data : [data]
   
-  const decryptedAccounts = accountsArray.map(account => 
-    isFacebookAccount ? decryptFacebookAccount(account) : decryptBankAccount(account)
-  )
+  const decryptedAccounts = accountsArray.map(account => {
+    if (isServer) return decryptServer(account)
+    if (isFacebookAccount) return decryptFacebookAccount(account)
+    return decryptBankAccount(account)
+  })
   
   if (format === 'json') {
     return JSON.stringify(decryptedAccounts, null, 2)
   }
   
   return decryptedAccounts.map(account => {
-    if (isFacebookAccount) {
+    if (isServer) {
+      const customFieldsStr = Object.entries(account.customFields)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n')
+
+      return [
+        `Server Details for ${account.serverIp}`,
+        '----------------------------------------',
+        `Server IP: ${account.serverIp}`,
+        `Root Password: ${account.rootPassword}`,
+        customFieldsStr ? `\nCustom Fields:\n${customFieldsStr}` : null,
+        account.createdAt ? `\nCreated: ${new Date(account.createdAt).toLocaleString()}` : null,
+        account.updatedAt ? `Last Updated: ${new Date(account.updatedAt).toLocaleString()}` : null,
+      ].filter(Boolean).join('\n')
+    } else if (isFacebookAccount) {
       return [
         `Account Details for ${account.userId}`,
         '----------------------------------------',
